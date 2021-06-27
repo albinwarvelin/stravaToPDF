@@ -1,0 +1,68 @@
+.mainBG
+{
+    -fx-background-color: #585858;
+}
+.topBarBG
+{
+    -fx-background-color: #383838;
+}
+.navBarBG
+{
+    -fx-background-color: #dc9656;
+}
+.topAppLabel
+{
+    -fx-font-size: 18px;
+    -fx-font-style: italic;
+    -fx-font-weight: bold;
+    -fx-font-family: "Roboto";
+    -fx-text-fill: #585858;
+}
+.authButton:hover
+{
+    -fx-opacity: 0.5;
+}
+.navBarLabel
+{
+    -fx-font-size: 24px;
+    -fx-font-style: italic;
+    -fx-font-weight: bold;
+    -fx-font-family: "Roboto";
+    -fx-text-fill: #282828;
+}
+.navBarSEP .line
+{
+    -fx-border-style: solid;
+    -fx-border-color: #282828;
+}
+.navBarDatePickerLabel
+{
+    -fx-font-size: 18px;
+    -fx-font-style: italic;
+    -fx-font-weight: bold;
+    -fx-font-family: "Roboto";
+    -fx-text-fill: #282828;
+}
+.navBarDatePicker
+{
+    -fx-background-color: #6E3800;
+    -fx-background-radius: 0px;
+}
+.navBarDatePicker.text-field
+{
+    -fx-background-color: #6E3800;
+}
+.navBarButtons
+{
+    -fx-background-radius: 0px;
+    -fx-background-color: #A16325;
+    -fx-font-size: 18px;
+    -fx-font-style: italic;
+    -fx-font-weight: bold;
+    -fx-font-family: "Roboto";
+    -fx-text-fill: #282828;
+}
+.navBarButtons:hover
+{
+    -fx-background-color: #6E3800;
+}
