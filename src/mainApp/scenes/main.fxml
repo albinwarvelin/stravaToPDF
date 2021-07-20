@@ -145,6 +145,7 @@
    <center>
       <StackPane fx:id="contentSP" BorderPane.alignment="CENTER">
          <children>
+            <WebView fx:id="authorizationWV" prefHeight="200.0" prefWidth="200.0" />
             <BorderPane prefHeight="200.0" prefWidth="200.0" styleClass="mainBG">
                <bottom>
                   <HBox alignment="BOTTOM_RIGHT" prefHeight="50.0" BorderPane.alignment="CENTER">
@@ -161,7 +162,6 @@
                   </HBox>
                </bottom>
             </BorderPane>
-            <WebView fx:id="authorizationWV" prefHeight="200.0" prefWidth="200.0" />
          </children>
       </StackPane>
    </center>
