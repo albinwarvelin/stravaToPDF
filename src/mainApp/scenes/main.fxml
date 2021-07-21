@@ -150,6 +150,16 @@
                <bottom>
                   <HBox alignment="BOTTOM_RIGHT" prefHeight="50.0" BorderPane.alignment="CENTER">
                      <children>
+                        <Pane fx:id="statusBarPane">
+                           <children>
+                              <Label layoutY="17.0" text="statusbar">
+                                 <padding>
+                                    <Insets left="10.0" right="10.0" />
+                                 </padding>
+                              </Label>
+                           </children>
+                        </Pane>
+                        <Pane HBox.hgrow="ALWAYS" />
                         <ImageView fitHeight="30.0" fitWidth="338.0" pickOnBounds="true" preserveRatio="true">
                            <image>
                               <Image url="@../applicationAssets/powered_strava.png" />

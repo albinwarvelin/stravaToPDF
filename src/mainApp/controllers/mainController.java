@@ -40,50 +40,58 @@ public class mainController implements Initializable
         /* +++ Add loading message in status bar */
         authorizationWV.getEngine().getLoadWorker().stateProperty().addListener((observable, oldState, newState) ->
         {
-            System.out.println(newState);
-            System.out.println(authorizationWV.getEngine().getLocation());
-
             /* Checked before website is reached */
             if (newState == Worker.State.SCHEDULED)
             {
-                /* Stops webview if user exits strava (to prevent user from navigating outside strava authorization */
-                if (!checkValidAuthorizationWV())
+                /* Stops webview if user exits strava login (to prevent user from navigating outside strava oauth) */
+                if (!checkValidAuthorizationWV_test())
                 {
                     stopAuthorizationWV();
 
+                    System.out.println("Invalid url");
                     /* +++ Add error message in status bar */
                 }
             }
 
-            if (newState == Worker.State.SUCCEEDED || newState == Worker.State.FAILED)
+            /* Checks if there is no internet connection and stops*/
+            if (newState == Worker.State.FAILED)
             {
-                /* Checks if user is heading to strava dashboard, and cuts off in that case */
-                if (authorizationWV.getEngine().getLocation().equals("https://www.strava.com/dashboard"))
+                if (authorizationWV.getEngine().getLocation().equals("https://www.strava.com/oauth/authorize?client_id=67536&response_type=code&redirect_uri=http://localhost&approval_prompt=force&scope=read_all,activity:read_all"))
                 {
                     stopAuthorizationWV();
 
-                    /* +++ Add error message in status bar */
+                    System.out.println("No internet connection");
+                    /* +++ Add error message in status bar*/
                 }
+            }
 
+            /* If webview is loaded, it's sent to front and viewable */
+            if (newState == Worker.State.SUCCEEDED)
+            {
                 /* Brings webview to front if not in front */
                 if (contentSP.getChildren().get(contentSP.getChildren().size() - 1) != authorizationWV && !webViewFinished)
                 {
                     authorizationWV.toFront();
                 }
             }
+
+            /* Returns parameters to program */
+            if (newState == Worker.State.FAILED)
+            {
+
+            }
         });
     }
-    private boolean checkValidAuthorizationWV()
-    {
-        String urlString = authorizationWV.getEngine().getLocation();
 
+    private boolean checkValidAuthorizationWV_test()
+    {
         boolean validDomain;
 
-        /* If url is about:blank, program skips check. Only happens when null is loaded */
-        if (!urlString.equals("about:blank"))
+        String urlString = authorizationWV.getEngine().getLocation();
+
+        if (urlString.equals("https://www.strava.com/"))
         {
-            String domain = urlString.substring(findNIndexOf('/', 2, urlString) + 1, findNIndexOf('/', 3, urlString));
-            validDomain = domain.contains("strava") || domain.contains("localhost");
+            validDomain = false;
         }
         else
         {
@@ -91,6 +99,13 @@ public class mainController implements Initializable
         }
 
         return validDomain;
+    }
+
+    private void stopAuthorizationWV()
+    {
+        authorizationWV.toBack();
+        webViewFinished = true;
+        authorizationWV.getEngine().load(null);
     }
 
     private int findNIndexOf(char character, int n, String string)
@@ -103,13 +118,6 @@ public class mainController implements Initializable
         }
 
         return index;
-    }
-
-    private void stopAuthorizationWV()
-    {
-        authorizationWV.toBack();
-        webViewFinished = true;
-        authorizationWV.getEngine().load(null);
     }
 
     /* Handles buttons */
