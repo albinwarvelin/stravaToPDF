@@ -18,7 +18,7 @@
 <?import javafx.scene.text.Font?>
 <?import javafx.scene.web.WebView?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="720.0" prefWidth="1280.0" stylesheets="@../styling/mainStylesheet.css" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1" fx:controller="mainApp.controllers.mainController">
+<BorderPane prefHeight="720.0" prefWidth="1280.0" stylesheets="@../styling/mainStylesheet.css" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1" fx:controller="mainApp.controllers.mainController">
    <left>
       <VBox prefWidth="300.0" styleClass="navBarBG" BorderPane.alignment="CENTER">
          <children>
@@ -172,9 +172,15 @@
       </StackPane>
    </center>
    <top>
-      <HBox fx:id="topHBox" prefHeight="40.0" prefWidth="200.0" styleClass="topBarBG" BorderPane.alignment="CENTER">
+      <HBox prefHeight="40.0" prefWidth="200.0" styleClass="topBarBG" BorderPane.alignment="CENTER">
+         <effect>
+            <DropShadow height="38.79" radius="14.4475" />
+         </effect>
+         <BorderPane.margin>
+            <Insets left="-5.0" right="-5.0" />
+         </BorderPane.margin>
          <children>
-            <HBox alignment="CENTER_LEFT" prefHeight="100.0" prefWidth="200.0" HBox.hgrow="ALWAYS">
+            <HBox fx:id="topHBox" alignment="CENTER_LEFT" minHeight="40.0" minWidth="0.0" prefHeight="40.0" prefWidth="160.0" HBox.hgrow="ALWAYS">
                <children>
                   <Pane prefHeight="30.0" prefWidth="30.0" styleClass="topAppPane">
                      <HBox.margin>
@@ -190,11 +196,11 @@
                      </HBox.margin>
                   </Label>
                </children>
-            </HBox>
-            <HBox alignment="CENTER_RIGHT" prefHeight="100.0" prefWidth="140.0">
                <HBox.margin>
-                  <Insets right="5.0" />
+                  <Insets left="5.0" />
                </HBox.margin>
+            </HBox>
+            <HBox alignment="CENTER_RIGHT" nodeOrientation="LEFT_TO_RIGHT" prefHeight="40.0" prefWidth="140.0">
                <children>
                   <Button minHeight="40.0" minWidth="40.0" mnemonicParsing="false" onAction="#backButton_Action" prefHeight="40.0" prefWidth="40.0" styleClass="controlBarButton">
                      <font>
@@ -228,14 +234,12 @@
                         <Pane maxHeight="17.0" maxWidth="17.0" styleClass="closePane" />
                      </graphic>
                   </Button>
-               </children></HBox>
+               </children>
+               <HBox.margin>
+                  <Insets right="5.0" />
+               </HBox.margin>
+            </HBox>
          </children>
-         <BorderPane.margin>
-            <Insets left="-5.0" right="-5.0" />
-         </BorderPane.margin>
-         <effect>
-            <DropShadow height="38.79" radius="14.4475" />
-         </effect>
       </HBox>
    </top>
 </BorderPane>

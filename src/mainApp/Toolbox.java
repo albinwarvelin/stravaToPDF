@@ -1,4 +1,4 @@
-package mainApp.controllers;
+package mainApp;
 
 public class Toolbox
 {

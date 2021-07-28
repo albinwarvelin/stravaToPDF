@@ -20,6 +20,7 @@ public class main extends Application {
         window.setTitle("Strava To PDF");
         window.setScene(new Scene(root, 1280, 720));
         window.initStyle(StageStyle.UNDECORATED);
+        ResizeHelper.addResizeListener(window);
         window.show();
     }
 

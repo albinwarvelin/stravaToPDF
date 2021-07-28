@@ -6,12 +6,15 @@ import javafx.concurrent.Worker;
 import javafx.fxml.Initializable;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.control.Label;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.web.WebView;
 import javafx.stage.Screen;
 import javafx.util.Duration;
+import mainApp.ResizeHelper;
+import mainApp.Toolbox;
 import mainApp.main;
 
 import java.net.URL;
@@ -21,6 +24,8 @@ public class mainController implements Initializable
 {
     /* Window */
     private boolean isMaximized = false;
+    private boolean resizingActive = false;
+
     private double xOffset = 0;
     private double yOffset = 0;
 
@@ -65,6 +70,9 @@ public class mainController implements Initializable
 
         authorizationWV.getEngine().getLoadWorker().stateProperty().addListener((observable, oldState, newState) ->
         {
+            System.out.println(newState);
+            System.out.println(authorizationWV.getEngine().getLocation());
+
             /* Checked before website is reached */
             if (newState == Worker.State.SCHEDULED)
             {
@@ -86,6 +94,15 @@ public class mainController implements Initializable
 
                     displayStatusBar("Error: No internet connection.", 5000);
                 }
+
+                /* Checks if domain is localhost, if true program handles url with parameters */
+                String urlString = authorizationWV.getEngine().getLocation();
+                String urlDomain = urlString.substring(Toolbox.findNIndexOf('/', 2, urlString) + 1, Toolbox.findNIndexOf('/', 3, urlString));
+
+                if (urlDomain.equals("localhost"))
+                {
+                    handleAuthCode(urlString);
+                }
             }
 
             /* If webview is loaded, it's sent to front and viewable */
@@ -97,12 +114,6 @@ public class mainController implements Initializable
                     authorizationWV.toFront();
                 }
             }
-
-            /* Returns parameters to program */
-            if (newState == Worker.State.FAILED)
-            {
-
-            }
         });
     }
 
@@ -112,7 +123,7 @@ public class mainController implements Initializable
 
         String urlString = authorizationWV.getEngine().getLocation();
 
-        if (urlString.equals("https://www.strava.com/"))
+        if (urlString.equals("https://www.strava.com/") || urlString.equals("https://www.strava.com/settings/apps") || urlString.equals("https://www.strava.com/terms"))
         {
             validDomain = false;
         }
@@ -129,6 +140,45 @@ public class mainController implements Initializable
         authorizationWV.toBack();
         webViewFinished = true;
         authorizationWV.getEngine().load(null);
+    }
+
+    private void handleAuthCode(String url)
+    {
+        /* Checks if error is returned */
+        if (url.contains("error="))
+        {
+            String error = url.substring(url.indexOf("error=") + 6);
+
+            if (error.equals("access_denied"))
+            {
+                displayStatusBar("Error: No access given.", 7000);
+            }
+            else
+            {
+                displayStatusBar("Error: Unknown error: " + error, 10000);
+            }
+        }
+
+        /* Checks if all scopes are allowed */
+        else if (url.contains("scope="))
+        {
+            String scope = url.substring(url.indexOf("scope=") + 6);
+
+            if (!scope.equals("read,activity:read_all,read_all"))
+            {
+                displayStatusBar("Error: Not all access given.", 10000);
+            }
+
+            /* If scopes are allowed, program extracts authorization code */
+            else if (url.contains("code="))
+            {
+                String code = url.substring(url.indexOf("code=") + 5, url.indexOf('&', url.indexOf("code=") + 6));
+
+
+            }
+        }
+
+        stopAuthorizationWV();
     }
 
     private void displayStatusBar(String text, int durationMillis)
@@ -257,45 +307,63 @@ public class mainController implements Initializable
     }
 
     /* Run on initialization */
-    public void makeScreenDraggable(HBox topHBox)
+    public void makeScreenDraggable(HBox topNode)
     {
-        topHBox.setOnMousePressed((event) ->
+        topNode.setOnMousePressed((event) ->
         {
             xOffset = event.getSceneX();
             yOffset = event.getSceneY();
 
-            maximizedSizeX = main.window.getWidth();
-            maximizedSizeY = main.window.getWidth();
-
-            main.window.setOpacity(0.8);
-        });
-        topHBox.setOnMouseDragged((event) ->
-        {
-            if (isMaximized)
+            if (yOffset < ResizeHelper.getBorder())
             {
-                main.window.setWidth(previousWindowWidth);
-                main.window.setHeight(previousWindowHeight);
-
-                main.window.setX(event.getScreenX() - (xOffset * previousWindowWidth / maximizedSizeX));
-                main.window.setY(event.getScreenY() - (yOffset * previousWindowHeight / maximizedSizeY));
+                resizingActive = true;
             }
             else
             {
-                main.window.setX(event.getScreenX() - xOffset);
-                main.window.setY(event.getScreenY() - yOffset);
+                maximizedSizeX = main.window.getWidth();
+                maximizedSizeY = main.window.getWidth();
+
+                main.window.setOpacity(0.8);
+            }
+        });
+        topNode.setOnMouseDragged((event) ->
+        {
+            if (!resizingActive)
+            {
+                if (isMaximized)
+                {
+                    main.window.setWidth(previousWindowWidth);
+                    main.window.setHeight(previousWindowHeight);
+
+                    main.window.setX(event.getScreenX() - (xOffset * previousWindowWidth / maximizedSizeX));
+                    main.window.setY(event.getScreenY() - (yOffset * previousWindowHeight / maximizedSizeY));
+                }
+                else
+                {
+                    main.window.setX(event.getScreenX() - xOffset);
+                    main.window.setY(event.getScreenY() - yOffset);
+                }
+
+                main.window.setOpacity(0.8);
+            }
+        });
+        topNode.setOnDragDone((event) ->
+        {
+            if (!resizingActive)
+            {
+                isMaximized = false;
+                main.window.setOpacity(1.0);
+            }
+        });
+        topNode.setOnMouseReleased((event) ->
+        {
+            if (!resizingActive)
+            {
+                isMaximized = false;
+                main.window.setOpacity(1.0);
             }
 
-            main.window.setOpacity(0.8);
-        });
-        topHBox.setOnDragDone((event) ->
-        {
-            isMaximized = false;
-            main.window.setOpacity(1.0);
-        });
-        topHBox.setOnMouseReleased((event) ->
-        {
-            isMaximized = false;
-            main.window.setOpacity(1.0);
+            resizingActive = false;
         });
     }
 }
