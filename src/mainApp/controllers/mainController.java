@@ -6,18 +6,26 @@ import javafx.concurrent.Worker;
 import javafx.fxml.Initializable;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.control.Label;
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.web.WebView;
 import javafx.stage.Screen;
 import javafx.util.Duration;
+import mainApp.Athlete;
 import mainApp.ResizeHelper;
 import mainApp.Toolbox;
 import mainApp.main;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.ResourceBundle;
 
 public class mainController implements Initializable
@@ -52,17 +60,22 @@ public class mainController implements Initializable
     /* Variables */
     private boolean webViewFinished;
 
+    public Athlete currentAthlete;
+
     /* Run on first startup */
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle)
     {
         makeScreenDraggable(topHBox);
+
+        currentAthlete = new Athlete();
     }
 
+    /* Opens authorization */
     private void openAuthorization()
     {
         /* Loads strava oauth, strava oauth redirects to login screen automatically */
-        authorizationWV.getEngine().load("https://www.strava.com/oauth/authorize?client_id=67536&response_type=code&redirect_uri=http://localhost&approval_prompt=force&scope=read_all,activity:read_all");
+        authorizationWV.getEngine().load("https://www.strava.com/oauth/authorize?client_id=67536&response_type=code&redirect_uri=http://localhost&approval_prompt=force&scope=read_all,activity:read_all,profile:read_all");
 
         webViewFinished = false;
 
@@ -70,9 +83,6 @@ public class mainController implements Initializable
 
         authorizationWV.getEngine().getLoadWorker().stateProperty().addListener((observable, oldState, newState) ->
         {
-            System.out.println(newState);
-            System.out.println(authorizationWV.getEngine().getLocation());
-
             /* Checked before website is reached */
             if (newState == Worker.State.SCHEDULED)
             {
@@ -101,7 +111,7 @@ public class mainController implements Initializable
 
                 if (urlDomain.equals("localhost"))
                 {
-                    handleAuthCode(urlString);
+                    handleAuthQueryURL(urlString);
                 }
             }
 
@@ -117,6 +127,7 @@ public class mainController implements Initializable
         });
     }
 
+    /* Checks url so user doesn't leave intended path (goes to strava settings, leaves to strava homepage etc) */
     private boolean checkValidAuthorizationWV_test()
     {
         boolean validDomain;
@@ -135,6 +146,7 @@ public class mainController implements Initializable
         return validDomain;
     }
 
+    /* Stops authorization webview and switches back to main pane */
     private void stopAuthorizationWV()
     {
         authorizationWV.toBack();
@@ -142,7 +154,8 @@ public class mainController implements Initializable
         authorizationWV.getEngine().load(null);
     }
 
-    private void handleAuthCode(String url)
+    /* Handles response query url from strava */
+    private void handleAuthQueryURL(String url)
     {
         /* Checks if error is returned */
         if (url.contains("error="))
@@ -164,7 +177,7 @@ public class mainController implements Initializable
         {
             String scope = url.substring(url.indexOf("scope=") + 6);
 
-            if (!scope.equals("read,activity:read_all,read_all"))
+            if (!scope.equals("read,activity:read_all,profile:read_all,read_all"))
             {
                 displayStatusBar("Error: Not all access given.", 10000);
             }
@@ -172,13 +185,90 @@ public class mainController implements Initializable
             /* If scopes are allowed, program extracts authorization code */
             else if (url.contains("code="))
             {
-                String code = url.substring(url.indexOf("code=") + 5, url.indexOf('&', url.indexOf("code=") + 6));
+                String code = url.substring(url.indexOf("code=") + 5, url.indexOf('&', url.indexOf("code=") + 5));
 
-
+                authTokenExchange(code);
             }
         }
 
         stopAuthorizationWV();
+    }
+
+    /* Exchanges authorization token for refresh token and access token */
+    private void authTokenExchange(String code)
+    {
+        try
+        {
+            URL url = new URL("https://www.strava.com/api/v3/oauth/token");
+            HttpURLConnection http = (HttpURLConnection)url.openConnection();
+            http.setRequestMethod("POST");
+            http.setDoOutput(true);
+            http.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+
+            String params = "client_id=67536&client_secret=ca0ffca492eed64219d40971807f716cfa3d50a4&code=" + code + "&grant_type=authorization_code";
+
+            byte[] out = params.getBytes(StandardCharsets.UTF_8);
+
+            OutputStream stream = http.getOutputStream();
+            stream.write(out);
+
+            int responseCode = http.getResponseCode();
+
+            switch (responseCode)
+            {
+                case 200 -> {
+                    BufferedReader responseReader = new BufferedReader(new InputStreamReader(http.getInputStream()));
+                    String response;
+
+                    do
+                    {
+                        response = responseReader.readLine();
+                    }
+                    while ((responseReader.readLine()) != null);
+
+                    currentAthlete.updateAthlete(response,"token_Request");
+                }
+                case 401 -> displayStatusBar("Token error: 401, Unauthorized.", 5000);
+                case 403 -> displayStatusBar("Token error: 403, Forbidden, you cannot access.", 5000);
+                case 404 -> displayStatusBar("Token error: 404, Not found.", 5000);
+                case 429 -> displayStatusBar("Token error: 429, Too many requests. Try again later.", 5000);
+                case 500 -> displayStatusBar("Token error: 500, Strava is having issues.", 5000);
+            }
+            http.disconnect();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    private HashMap<String, String> httpGetRequest(URL url, String access_Token)
+    {
+        HashMap<String, String> responseHM = null;
+
+        try
+        {
+            HttpURLConnection http = (HttpURLConnection)url.openConnection();
+            http.setRequestProperty("Authorization", "Bearer " + access_Token);
+
+            System.out.println(http.getResponseCode() + " " + http.getResponseMessage());
+
+            BufferedReader responseReader = new BufferedReader(new InputStreamReader(http.getInputStream()));
+            String response;
+            do
+            {
+                response = responseReader.readLine();
+            }
+            while ((responseReader.readLine()) != null);
+
+            http.disconnect();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+
+        return responseHM;
     }
 
     private void displayStatusBar(String text, int durationMillis)
