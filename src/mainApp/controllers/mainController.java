@@ -17,12 +17,8 @@ import mainApp.ResizeHelper;
 import mainApp.Toolbox;
 import mainApp.main;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -69,6 +65,12 @@ public class mainController implements Initializable
         makeScreenDraggable(topHBox);
 
         currentAthlete = new Athlete();
+
+        if (currentAthlete.loadAthleteDataFromFile())
+        {
+            displayStatusBar("Athlete data loaded from file.", 5000);
+        }
+
     }
 
     /* Opens authorization */
@@ -98,7 +100,7 @@ public class mainController implements Initializable
             /* Checks if there is no internet connection and stops*/
             if (newState == Worker.State.FAILED)
             {
-                if (authorizationWV.getEngine().getLocation().equals("https://www.strava.com/oauth/authorize?client_id=67536&response_type=code&redirect_uri=http://localhost&approval_prompt=force&scope=read_all,activity:read_all"))
+                if (authorizationWV.getEngine().getLocation().equals("https://www.strava.com/oauth/authorize?client_id=67536&response_type=code&redirect_uri=http://localhost&approval_prompt=force&scope=read_all,activity:read_all,profile:read_all"))
                 {
                     stopAuthorizationWV();
 
@@ -111,6 +113,7 @@ public class mainController implements Initializable
 
                 if (urlDomain.equals("localhost"))
                 {
+                    stopAuthorizationWV();
                     handleAuthQueryURL(urlString);
                 }
             }
@@ -154,7 +157,7 @@ public class mainController implements Initializable
         authorizationWV.getEngine().load(null);
     }
 
-    /* Handles response query url from strava */
+    /* Handles response query url from strava, checks if scopes are correct */
     private void handleAuthQueryURL(String url)
     {
         /* Checks if error is returned */
@@ -187,15 +190,17 @@ public class mainController implements Initializable
             {
                 String code = url.substring(url.indexOf("code=") + 5, url.indexOf('&', url.indexOf("code=") + 5));
 
-                authTokenExchange(code);
+
+                authTokenHTTPRequest(code);
+                athleteInfoHTTPRequest(currentAthlete.getAccess_Token());
+
+                currentAthlete.saveAthleteDataToJSONFile();
             }
         }
-
-        stopAuthorizationWV();
     }
 
     /* Exchanges authorization token for refresh token and access token */
-    private void authTokenExchange(String code)
+    private void authTokenHTTPRequest(String code)
     {
         try
         {
@@ -226,7 +231,7 @@ public class mainController implements Initializable
                     }
                     while ((responseReader.readLine()) != null);
 
-                    currentAthlete.updateAthlete(response,"token_Request");
+                    currentAthlete.tokenUpdate(response);
                 }
                 case 401 -> displayStatusBar("Token error: 401, Unauthorized.", 5000);
                 case 403 -> displayStatusBar("Token error: 403, Forbidden, you cannot access.", 5000);
@@ -235,6 +240,8 @@ public class mainController implements Initializable
                 case 500 -> displayStatusBar("Token error: 500, Strava is having issues.", 5000);
             }
             http.disconnect();
+
+            displayStatusBar("Athlete information retrieval successful.", 5000);
         }
         catch (IOException e)
         {
@@ -242,33 +249,57 @@ public class mainController implements Initializable
         }
     }
 
-    private HashMap<String, String> httpGetRequest(URL url, String access_Token)
+    /* Retrieves athlete data with HTTP request to strava api, sends response to currentAthlete */
+    private boolean athleteInfoHTTPRequest(String access_Token)
     {
-        HashMap<String, String> responseHM = null;
+        boolean successfulRequest = false;
 
-        try
+        if (access_Token != null)
         {
-            HttpURLConnection http = (HttpURLConnection)url.openConnection();
-            http.setRequestProperty("Authorization", "Bearer " + access_Token);
-
-            System.out.println(http.getResponseCode() + " " + http.getResponseMessage());
-
-            BufferedReader responseReader = new BufferedReader(new InputStreamReader(http.getInputStream()));
-            String response;
-            do
+            try
             {
-                response = responseReader.readLine();
+                URL url = new URL("https://www.strava.com/api/v3/athlete");
+
+                HttpURLConnection http = (HttpURLConnection)url.openConnection();
+                http.setRequestProperty("Authorization", "Bearer " + access_Token);
+
+                int responseCode = http.getResponseCode();
+
+                switch (responseCode)
+                {
+                    case 200 -> {
+                        BufferedReader responseReader = new BufferedReader(new InputStreamReader(http.getInputStream()));
+                        String response;
+
+                        do
+                        {
+                            response = responseReader.readLine();
+                        }
+                        while ((responseReader.readLine()) != null);
+
+                        currentAthlete.athleteUpdate(response);
+                        displayStatusBar("Athlete information retrieval successful.", 5000);
+                        successfulRequest = true;
+                    }
+                    case 401 -> displayStatusBar("Token error: 401, Unauthorized.", 5000);
+                    case 403 -> displayStatusBar("Token error: 403, Forbidden, you cannot access.", 5000);
+                    case 404 -> displayStatusBar("Token error: 404, Not found.", 5000);
+                    case 429 -> displayStatusBar("Token error: 429, Too many requests. Try again later.", 5000);
+                    case 500 -> displayStatusBar("Token error: 500, Strava is having issues.", 5000);
+                }
+                http.disconnect();
             }
-            while ((responseReader.readLine()) != null);
-
-            http.disconnect();
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
         }
-        catch (IOException e)
+        else
         {
-            e.printStackTrace();
+            displayStatusBar("Error: No access token found.", 5000);
         }
 
-        return responseHM;
+        return successfulRequest;
     }
 
     private void displayStatusBar(String text, int durationMillis)
@@ -342,11 +373,23 @@ public class mainController implements Initializable
     }
     public void refreshButton_Action()
     {
-
+        if(athleteInfoHTTPRequest(currentAthlete.getAccess_Token()))
+        {
+            currentAthlete.saveAthleteDataToJSONFile();
+        }
     }
     public void signOutButton_Action()
     {
-        System.out.println(authorizationWV.getEngine().getLocation());
+        File athleteInformation = new File("src/mainApp/athleteData/athleteInformation.txt");
+        if (athleteInformation.delete())
+        {
+            currentAthlete = new Athlete();
+            displayStatusBar("Signed out athlete." , 3000);
+        }
+        else
+        {
+            displayStatusBar("Sign out failed.", 3000);
+        }
     }
     public void backButton_Action()
     {
