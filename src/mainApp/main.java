@@ -4,13 +4,13 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
 public class main extends Application {
 
     public static Stage window;
+    public static Scene scene;
 
     @Override
     public void start(Stage primaryStage) throws Exception{
@@ -18,7 +18,9 @@ public class main extends Application {
 
         Parent root = FXMLLoader.load(getClass().getResource("scenes/main.fxml"));
         window.setTitle("Strava To PDF");
-        window.setScene(new Scene(root, 1280, 720));
+        scene = new Scene(root, 1280, 720);
+        window.setScene(scene);
+
         window.initStyle(StageStyle.UNDECORATED);
         ResizeHelper.addResizeListener(window);
         window.show();

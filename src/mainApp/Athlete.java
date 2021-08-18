@@ -11,7 +11,7 @@ public class Athlete
 {
     /** App resources **/
     private String token_Type;
-    private int expires_At;
+    private long expires_At = 0;
     private int expires_In;
     private String refresh_Token;
     private String access_Token;
@@ -51,7 +51,7 @@ public class Athlete
         access_Token = tokenJSONObject.getString("access_token");
         refresh_Token = tokenJSONObject.getString("refresh_token");
         expires_In = tokenJSONObject.getInt("expires_in");
-        expires_At = tokenJSONObject.getInt("expires_at");
+        expires_At = tokenJSONObject.getLong("expires_at");
         token_Type = tokenJSONObject.getString("token_type");
 
         JSONObject athleteJSONObject = tokenJSONObject.getJSONObject("athlete");
@@ -125,8 +125,73 @@ public class Athlete
         }
     }
 
+    /* Updates token with refresh token response, with JSON-Java */
+    public void refreshTokenUpdate(String jsonString)
+    {
+        JSONObject tokenJSONObject = new JSONObject(jsonString);
+
+        access_Token = tokenJSONObject.getString("access_token");
+        refresh_Token = tokenJSONObject.getString("refresh_token");
+        expires_In = tokenJSONObject.getInt("expires_in");
+        expires_At = tokenJSONObject.getLong("expires_at");
+        token_Type = tokenJSONObject.getString("token_type");
+    }
+
+    public void saveTokenDataToFile()
+    {
+        try
+        {
+            JSONObject tokenData = tokenDataToJSONObject();
+
+            BufferedWriter athleteDataWriter = new BufferedWriter(new FileWriter("src/mainApp/athleteData/tokenData.txt"));
+            athleteDataWriter.write(tokenData.toString());
+
+            athleteDataWriter.close();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    public boolean loadTokenDataFromFile()
+    {
+        boolean dataAvailable = false;
+
+        try
+        {
+            BufferedReader athleteDataReader = new BufferedReader(new FileReader("src/mainApp/athleteData/tokenData.txt"));
+            String jsonString = athleteDataReader.readLine();
+
+            if (!jsonString.equals(""))
+            {
+                JSONObject loadedJSONObject = new JSONObject(jsonString);
+
+                access_Token = loadedJSONObject.getString("access_token");
+                refresh_Token = loadedJSONObject.getString("refresh_token");
+                expires_In = loadedJSONObject.getInt("expires_in");
+                expires_At = loadedJSONObject.getInt("expires_at");
+                token_Type = loadedJSONObject.getString("token_type");
+
+                dataAvailable = true;
+
+                athleteDataReader.close();
+            }
+        }
+        catch (FileNotFoundException e)
+        {
+            dataAvailable = false;
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+
+        return dataAvailable;
+    }
+
     /* Saves JSON-Object to JSON-File */
-    public void saveAthleteDataToJSONFile()
+    public void saveAthleteDataToFile()
     {
         try
         {
@@ -211,6 +276,8 @@ public class Athlete
 
 
                 dataAvailable = true;
+
+                athleteDataReader.close();
             }
         }
         catch (FileNotFoundException e)
@@ -225,8 +292,8 @@ public class Athlete
         return dataAvailable;
     }
 
-    /* Puts all data in JSONObject */
-    private JSONObject athleteDataToJSONObject()
+    /* Puts token data in JSONObject */
+    private JSONObject tokenDataToJSONObject()
     {
         JSONObject data = new JSONObject();
 
@@ -235,6 +302,15 @@ public class Athlete
         data.put("expires_in", expires_In);
         data.put("refresh_token", refresh_Token);
         data.put("access_token", access_Token);
+
+        return data;
+    }
+
+    /* Puts all data in JSONObject */
+    private JSONObject athleteDataToJSONObject()
+    {
+        JSONObject data = new JSONObject();
+
         data.put("id", id);
         data.put("username", username);
         data.put("firstname", firstname);
@@ -326,7 +402,7 @@ public class Athlete
     {
         return token_Type;
     }
-    public int getExpires_At()
+    public long getExpires_At()
     {
         return expires_At;
     }

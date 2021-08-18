@@ -20,116 +20,188 @@
 
 <BorderPane prefHeight="720.0" prefWidth="1280.0" stylesheets="@../styling/mainStylesheet.css" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1" fx:controller="mainApp.controllers.mainController">
    <left>
-      <VBox prefWidth="300.0" styleClass="navBarBG" BorderPane.alignment="CENTER">
+      <VBox fx:id="navBarBG" prefWidth="300.0" styleClass="navBarBG" BorderPane.alignment="CENTER">
          <children>
-            <VBox VBox.vgrow="ALWAYS">
+            <VBox prefHeight="493.0" prefWidth="300.0" VBox.vgrow="ALWAYS">
                <children>
-                  <Pane fx:id="authorizationButton" maxHeight="-Infinity" maxWidth="-Infinity" onMouseClicked="#authorizationButton_Action">
-                     <children>
-                        <ImageView fitHeight="48.0" fitWidth="193.0" pickOnBounds="true" preserveRatio="true">
-                           <image>
-                              <Image url="@../applicationAssets/connect_strava_dark.png" />
-                           </image>
-                        </ImageView>
-                        <ImageView fitHeight="48.0" fitWidth="193.0" pickOnBounds="true" preserveRatio="true" styleClass="authButton">
-                           <image>
-                              <Image url="@../applicationAssets/connect_strava.png" />
-                           </image>
-                           <viewport>
-                              <Rectangle2D />
-                           </viewport>
-                        </ImageView>
-                     </children>
+                  <StackPane fx:id="authorization_SP" maxHeight="-Infinity" maxWidth="-Infinity">
                      <VBox.margin>
                         <Insets bottom="20.0" left="15.0" right="20.0" top="20.0" />
                      </VBox.margin>
-                  </Pane>
+                     <children>
+                        <AnchorPane>
+                           <children>
+                              <Pane layoutX="88.0" layoutY="12.0" prefHeight="24.0" prefWidth="18.0" styleClass="stravaLoadingIcon" />
+                              <ImageView fitHeight="25.0" fitWidth="25.0" layoutX="2.0" layoutY="12.0" pickOnBounds="true" preserveRatio="true" />
+                           </children>
+                        </AnchorPane>
+                        <Pane fx:id="authorizationButton" maxHeight="-Infinity" maxWidth="-Infinity" onMouseClicked="#authorizationButton_Action">
+                           <children>
+                              <ImageView fitHeight="48.0" fitWidth="193.0" pickOnBounds="true" preserveRatio="true">
+                                 <image>
+                                    <Image url="@../applicationAssets/stravaLogos/connect_strava_dark.png" />
+                                 </image>
+                              </ImageView>
+                              <ImageView fitHeight="48.0" fitWidth="193.0" pickOnBounds="true" preserveRatio="true" styleClass="authButton">
+                                 <image>
+                                    <Image url="@../applicationAssets/stravaLogos/connect_strava.png" />
+                                 </image>
+                                 <viewport>
+                                    <Rectangle2D />
+                                 </viewport>
+                              </ImageView>
+                           </children>
+                        </Pane>
+                     </children>
+                  </StackPane>
                   <Label styleClass="navBarLabel" text="Timeframe">
                      <VBox.margin>
-                        <Insets bottom="5.0" left="20.0" right="20.0" top="20.0" />
+                        <Insets bottom="5.0" left="15.0" right="15.0" top="20.0" />
                      </VBox.margin>
                   </Label>
                   <Separator styleClass="navBarSEP">
                      <VBox.margin>
-                        <Insets left="20.0" right="20.0" />
+                        <Insets left="15.0" right="15.0" />
                      </VBox.margin>
                   </Separator>
                   <AnchorPane>
                      <children>
-                        <Label layoutY="6.0" prefHeight="23.0" styleClass="navBarDatePickerLabel" text="Start" />
-                        <Label layoutY="51.0" prefHeight="23.0" styleClass="navBarDatePickerLabel" text="Stop" />
-                        <DatePicker editable="false" layoutX="60.0" prefHeight="35.0" prefWidth="200.0" styleClass="navBarDatePicker" />
-                        <DatePicker editable="false" layoutX="60.0" layoutY="45.0" prefHeight="35.0" prefWidth="200.0" styleClass="navBarDatePicker" />
+                        <Label layoutX="-1.0" layoutY="11.0" prefHeight="23.0" styleClass="navBarDatePickerLabel" text="Start" />
+                        <Label layoutY="66.0" prefHeight="23.0" styleClass="navBarDatePickerLabel" text="Stop" />
+                        <DatePicker layoutX="50.0" pickOnBounds="false" prefHeight="45.0" prefWidth="220.0" styleClass="navBarDatePicker" />
+                        <DatePicker layoutX="50.0" layoutY="55.0" pickOnBounds="false" prefHeight="45.0" prefWidth="220.0" styleClass="navBarDatePicker" />
                      </children>
                      <VBox.margin>
-                        <Insets bottom="20.0" left="20.0" right="20.0" top="10.0" />
+                        <Insets bottom="20.0" left="15.0" right="15.0" top="10.0" />
                      </VBox.margin>
                   </AnchorPane>
-                  <Button fx:id="attributesButton" mnemonicParsing="false" onAction="#attributesButton_Action" prefHeight="30.0" prefWidth="193.0" styleClass="navBarButtons" text="Attributes">
+                  <Button fx:id="attributesButton" alignment="CENTER" mnemonicParsing="false" onAction="#attributesButton_Action" prefHeight="45.0" prefWidth="300.0" styleClass="navBarButtons">
                      <VBox.margin>
-                        <Insets bottom="10.0" left="20.0" right="20.0" />
+                        <Insets bottom="5.0" left="15.0" right="15.0" top="5.0" />
                      </VBox.margin>
-                  </Button>
-                  <Button fx:id="graphsButton" maxHeight="20.0" mnemonicParsing="false" onAction="#graphsButton_Action" prefHeight="30.0" prefWidth="193.0" styleClass="navBarButtons" text="Graphs">
-                     <VBox.margin>
-                        <Insets bottom="10.0" left="20.0" right="20.0" />
-                     </VBox.margin>
-                  </Button>
-                  <Button fx:id="logoButton" mnemonicParsing="false" onAction="#logoButton_Action" prefHeight="30.0" prefWidth="193.0" styleClass="navBarButtons" text="Logo">
-                     <VBox.margin>
-                        <Insets bottom="10.0" left="20.0" right="20.0" />
-                     </VBox.margin>
-                  </Button>
-               </children>
-            </VBox>
-            <VBox prefHeight="120.0" prefWidth="100.0">
-               <children>
-                  <Button fx:id="settingsButton" mnemonicParsing="false" onAction="#settingsButton_Action" prefHeight="60.0" prefWidth="300.0" styleClass="navBarButtons">
                      <graphic>
-                        <HBox alignment="CENTER">
+                        <HBox alignment="CENTER_LEFT">
                            <children>
-                              <Label text="Settings">
+                              <Pane maxHeight="24.0" maxWidth="32.0" minHeight="24.0" minWidth="31.0" styleClass="profilePane">
+                                 <HBox.margin>
+                                    <Insets right="14.0" />
+                                 </HBox.margin>
+                              </Pane>
+                              <Label styleClass="navBarButtonText" text="Profile">
                                  <HBox.margin>
                                     <Insets right="10.0" />
                                  </HBox.margin>
                               </Label>
-                              <Pane maxHeight="24.0" maxWidth="30.0" minHeight="24.0" minWidth="30.0" styleClass="settingsPane" />
                            </children>
                         </HBox>
                      </graphic>
                   </Button>
-                  <HBox prefHeight="60.0" prefWidth="200.0">
-                     <children>
-                        <Button fx:id="refreshButton" mnemonicParsing="false" onAction="#refreshButton_Action" prefHeight="60.0" prefWidth="150.0" styleClass="navBarButtons">
-                           <graphic>
-                              <HBox alignment="CENTER">
-                                 <children>
-                                    <Label text="Refresh">
-                                       <HBox.margin>
-                                          <Insets right="10.0" />
-                                       </HBox.margin>
-                                    </Label>
-                                    <Pane maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" styleClass="refreshPane" />
-                                 </children>
-                              </HBox>
-                           </graphic>
-                        </Button>
-                        <Button fx:id="signOutButton" centerShape="false" mnemonicParsing="false" onAction="#signOutButton_Action" prefHeight="60.0" prefWidth="150.0" scaleShape="false" styleClass="navBarButtons">
-                           <graphic>
-                              <HBox alignment="CENTER" prefHeight="50.0" prefWidth="150.0">
-                                 <children>
-                                    <Label text="Sign Out">
-                                       <HBox.margin>
-                                          <Insets right="10.0" />
-                                       </HBox.margin>
-                                    </Label>
-                                    <Pane maxHeight="24.0" maxWidth="30.0" minHeight="24.0" minWidth="30.0" styleClass="signOutPane" />
-                                 </children>
-                              </HBox>
-                           </graphic>
-                        </Button>
-                     </children>
-                  </HBox>
+                  <Button fx:id="graphsButton" alignment="CENTER" mnemonicParsing="false" onAction="#graphsButton_Action" prefHeight="45.0" prefWidth="300.0" styleClass="navBarButtons">
+                     <VBox.margin>
+                        <Insets bottom="5.0" left="15.0" right="15.0" top="5.0" />
+                     </VBox.margin>
+                     <graphic>
+                        <HBox alignment="CENTER_LEFT">
+                           <children>
+                              <Pane maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" pickOnBounds="false" styleClass="dataPane">
+                                 <HBox.margin>
+                                    <Insets left="3.0" right="18.0" />
+                                 </HBox.margin>
+                              </Pane>
+                              <Label styleClass="navBarButtonText" text="Data">
+                                 <HBox.margin>
+                                    <Insets />
+                                 </HBox.margin>
+                              </Label>
+                           </children>
+                        </HBox>
+                     </graphic>
+                  </Button>
+                  <Button fx:id="logoButton" alignment="CENTER" mnemonicParsing="false" onAction="#logoButton_Action" prefHeight="45.0" prefWidth="300.0" styleClass="navBarButtons">
+                     <VBox.margin>
+                        <Insets bottom="5.0" left="15.0" right="15.0" top="5.0" />
+                     </VBox.margin>
+                     <graphic>
+                        <HBox alignment="CENTER_LEFT">
+                           <children>
+                              <Pane maxHeight="24.0" maxWidth="30.0" minHeight="24.0" minWidth="30.0" styleClass="logoPane">
+                                 <HBox.margin>
+                                    <Insets right="15.0" />
+                                 </HBox.margin>
+                              </Pane>
+                              <Label styleClass="navBarButtonText" text="Logo">
+                                 <HBox.margin>
+                                    <Insets />
+                                 </HBox.margin>
+                              </Label>
+                           </children>
+                        </HBox>
+                     </graphic>
+                  </Button>
+               </children>
+            </VBox>
+            <VBox prefHeight="175.0" prefWidth="300.0">
+               <children>
+                  <Button fx:id="settingsButton" mnemonicParsing="false" onAction="#settingsButton_Action" prefHeight="45.0" prefWidth="300.0" styleClass="navBarButtons">
+                     <graphic>
+                        <HBox alignment="CENTER_LEFT">
+                           <children>
+                              <Pane maxHeight="24.0" maxWidth="30.0" minHeight="24.0" minWidth="30.0" pickOnBounds="false" styleClass="settingsPane">
+                                 <HBox.margin>
+                                    <Insets right="15.0" />
+                                 </HBox.margin></Pane>
+                              <Label styleClass="navBarButtonText" text="Settings">
+                                 <HBox.margin>
+                                    <Insets />
+                                 </HBox.margin>
+                              </Label>
+                           </children>
+                        </HBox>
+                     </graphic>
+                     <VBox.margin>
+                        <Insets bottom="5.0" left="15.0" right="15.0" top="5.0" />
+                     </VBox.margin>
+                  </Button>
+                  <Button fx:id="refreshButton" mnemonicParsing="false" onAction="#refreshButton_Action" prefHeight="45.0" prefWidth="300.0" styleClass="navBarButtons">
+                     <graphic>
+                        <HBox alignment="CENTER_LEFT">
+                           <children>
+                              <Pane maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" styleClass="refreshPane">
+                                 <HBox.margin>
+                                    <Insets left="3.0" right="18.0" />
+                                 </HBox.margin></Pane>
+                              <Label styleClass="navBarButtonText" text="Refresh">
+                                 <HBox.margin>
+                                    <Insets />
+                                 </HBox.margin>
+                              </Label>
+                           </children>
+                        </HBox>
+                     </graphic>
+                     <VBox.margin>
+                        <Insets bottom="5.0" left="15.0" right="15.0" top="5.0" />
+                     </VBox.margin>
+                  </Button>
+                  <Button fx:id="signOutButton" centerShape="false" mnemonicParsing="false" onAction="#signOutButton_Action" prefHeight="45.0" prefWidth="300.0" scaleShape="false" styleClass="navBarButtons">
+                     <graphic>
+                        <HBox alignment="CENTER_LEFT">
+                           <children>
+                              <Pane maxHeight="24.0" maxWidth="30.0" minHeight="24.0" minWidth="30.0" styleClass="signOutPane">
+                                 <HBox.margin>
+                                    <Insets right="15.0" />
+                                 </HBox.margin></Pane>
+                              <Label styleClass="navBarButtonText" text="Sign Out">
+                                 <HBox.margin>
+                                    <Insets right="10.0" />
+                                 </HBox.margin>
+                              </Label>
+                           </children>
+                        </HBox>
+                     </graphic>
+                     <VBox.margin>
+                        <Insets bottom="5.0" left="15.0" right="15.0" top="5.0" />
+                     </VBox.margin>
+                  </Button>
                </children>
             </VBox>
          </children>
@@ -139,7 +211,7 @@
       <StackPane fx:id="contentSP" BorderPane.alignment="CENTER">
          <children>
             <WebView fx:id="authorizationWV" prefHeight="200.0" prefWidth="200.0" />
-            <BorderPane prefHeight="200.0" prefWidth="200.0" styleClass="mainBG">
+            <BorderPane fx:id="mainBG" prefHeight="200.0" prefWidth="200.0" styleClass="mainBG">
                <bottom>
                   <HBox alignment="BOTTOM_RIGHT" prefHeight="40.0" BorderPane.alignment="CENTER">
                      <children>
@@ -158,7 +230,7 @@
                         <Pane HBox.hgrow="ALWAYS" />
                         <ImageView fitHeight="30.0" fitWidth="338.0" pickOnBounds="true" preserveRatio="true">
                            <image>
-                              <Image url="@../applicationAssets/powered_strava.png" />
+                              <Image url="@../applicationAssets/stravaLogos/powered_strava.png" />
                            </image>
                            <HBox.margin>
                               <Insets bottom="5.0" left="10.0" right="10.0" top="5.0" />
