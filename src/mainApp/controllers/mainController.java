@@ -16,10 +16,12 @@ import mainApp.Athlete;
 import mainApp.ResizeHelper;
 import mainApp.Toolbox;
 import mainApp.main;
+import org.json.JSONArray;
 
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ResourceBundle;
@@ -46,14 +48,18 @@ public class mainController implements Initializable
     public StackPane contentSP;
     public WebView authorizationWV;
     public HBox topHBox;
-    public StackPane authorization_SP;
+    public StackPane authorizationSP;
     public VBox navBarBG;
     public BorderPane mainBG;
-
+    public Pane authorizationButton;
+    public AnchorPane stravaConnectedAP;
+    public Label activitiesLoadedLabel;
+    public Label activitiesDateLabel;
 
     /* Status bar */
     public Label statusBarLabel;
     public Pane statusBarPane;
+    public Pane statusIconPane;
     private Timeline timeline;
     private int timeTicks;
 
@@ -65,16 +71,10 @@ public class mainController implements Initializable
     private final double minSpeed = 0.010;
     private String rotation = "cw";
 
-    private int hue1 = 223;
+    private int hue = 223;
     private final int maxHue = 300;
     private final int minHue = 130;
     private boolean addHue = true;
-
-    private int hue2;
-    private int hueMod = 50;
-    private boolean addHueMod = false;
-    private final int maxHueMod = 50;
-    private final int minHueMod = -50;
 
     private final int saturation = 100;
 
@@ -107,17 +107,45 @@ public class mainController implements Initializable
         /* Loads token data from file, if refresh is necessary HTTP request is sent and access token is updated */
         if (currentAthlete.loadTokenDataFromFile())
         {
-            displayStatusBar("Token data loaded from file.", 5000);
+            boolean successfulTokenRefresh = false;
+
+            displayStatusBar("Token data loaded from file.", 5000, "alert");
 
             if (checkRefreshNecessary())
             {
-                tokenRefreshHTTPRequest(currentAthlete.getRefresh_Token());
+                if (tokenRefreshHTTPRequest(currentAthlete.getRefresh_Token()))
+                {
+                    successfulTokenRefresh = true;
+                    currentAthlete.saveTokenDataToFile();
+                }
             }
-            if (!athleteInfoHTTPRequest(currentAthlete.getAccess_Token()))
+            if (athleteInfoHTTPRequest(currentAthlete.getAccess_Token()))
+            {
+                if (successfulTokenRefresh)
+                {
+                    displayStatusBar("Token refresh and athlete refresh successful.", 3000, "success");
+                }
+                else
+                {
+                    displayStatusBar("Athlete information refresh successful. Token refresh not needed.", 3000, "success");
+                }
+
+                currentAthlete.saveAthleteDataToFile();
+            }
+            else
             {
                 currentAthlete.loadAthleteDataFromFile();
             }
+
+            updateLoggedInIcon(true);
         }
+        else
+        {
+            updateLoggedInIcon(false);
+            displayStatusBar("No athlete connected, log in.", 2000, "alert");
+        }
+
+
         animatedNavBarBG();
     }
 
@@ -130,7 +158,7 @@ public class mainController implements Initializable
 
         webViewFinished = false;
 
-        displayStatusBar("Strava authorization loading....", 2000);
+        displayStatusBar("Strava authorization loading....", 2000, "alert");
 
         authorizationWV.getEngine().getLoadWorker().stateProperty().addListener((observable, oldState, newState) ->
         {
@@ -138,11 +166,11 @@ public class mainController implements Initializable
             if (newState == Worker.State.SCHEDULED)
             {
                 /* Stops webview if user exits strava login (to prevent user from navigating outside strava oauth) */
-                if (!checkValidAuthorizationWV_test())
+                if (!checkValidAuthorizationWV())
                 {
                     stopAuthorizationWV();
 
-                    displayStatusBar("Error: App cannot leave authorization.", 2000);
+                    displayStatusBar("Error: App cannot leave authorization.", 2000, "error");
                 }
             }
 
@@ -153,7 +181,7 @@ public class mainController implements Initializable
                 {
                     stopAuthorizationWV();
 
-                    displayStatusBar("Error: No internet connection.", 5000);
+                    displayStatusBar("Error: No internet connection.", 5000, "error");
                 }
 
                 /* Checks if domain is localhost, if true program handles url with parameters */
@@ -180,7 +208,7 @@ public class mainController implements Initializable
     }
 
     /* Checks url so user doesn't leave intended path (goes to strava settings, leaves to strava homepage etc) */
-    private boolean checkValidAuthorizationWV_test()
+    private boolean checkValidAuthorizationWV()
     {
         boolean validDomain;
 
@@ -216,11 +244,11 @@ public class mainController implements Initializable
 
             if (error.equals("access_denied"))
             {
-                displayStatusBar("Error: No access given.", 7000);
+                displayStatusBar("Error: No access given.", 7000, "error");
             }
             else
             {
-                displayStatusBar("Error: Unknown error: " + error, 10000);
+                displayStatusBar("Error: Unknown error: " + error, 10000, "error");
             }
         }
 
@@ -231,7 +259,7 @@ public class mainController implements Initializable
 
             if (!scope.equals("read,activity:read_all,profile:read_all,read_all"))
             {
-                displayStatusBar("Error: Not all access given.", 10000);
+                displayStatusBar("Error: Not all access given.", 10000, "error");
             }
 
             /* If scopes are allowed, program extracts authorization code */
@@ -241,10 +269,15 @@ public class mainController implements Initializable
 
 
                 authTokenHTTPRequest(code);
-                athleteInfoHTTPRequest(currentAthlete.getAccess_Token());
+                if(athleteInfoHTTPRequest(currentAthlete.getAccess_Token()))
+                {
+                    displayStatusBar("Athlete information retrieval successful.", 5000, "success");
 
-                currentAthlete.saveTokenDataToFile();
-                currentAthlete.saveAthleteDataToFile();
+                    updateLoggedInIcon(true);
+
+                    currentAthlete.saveTokenDataToFile();
+                    currentAthlete.saveAthleteDataToFile();
+                }
             }
         }
     }
@@ -283,13 +316,13 @@ public class mainController implements Initializable
 
                     currentAthlete.tokenUpdate(response);
 
-                    displayStatusBar("Athlete information retrieval successful.", 5000);
+                    displayStatusBar("Athlete information retrieval successful.", 5000, "success");
                 }
-                case 401 -> displayStatusBar("Token error: 401, Unauthorized.", 5000);
-                case 403 -> displayStatusBar("Token error: 403, Forbidden, you cannot access.", 5000);
-                case 404 -> displayStatusBar("Token error: 404, Not found.", 5000);
-                case 429 -> displayStatusBar("Token error: 429, Too many requests. Try again later.", 5000);
-                case 500 -> displayStatusBar("Token error: 500, Strava is having issues.", 5000);
+                case 401 -> displayStatusBar("Token error: 401, Unauthorized.", 5000, "error");
+                case 403 -> displayStatusBar("Token error: 403, Forbidden, you cannot access.", 5000, "error");
+                case 404 -> displayStatusBar("Token error: 404, Not found.", 5000, "error");
+                case 429 -> displayStatusBar("Token error: 429, Too many requests. Try again later.", 5000, "error");
+                case 500 -> displayStatusBar("Token error: 500, Strava is having issues.", 5000, "error");
             }
             http.disconnect();
         }
@@ -300,6 +333,7 @@ public class mainController implements Initializable
     }
 
     /** Data retrieval, from strava or file if strava is not working **/
+    /* Checks if token refresh is needed */
     private boolean checkRefreshNecessary()
     {
         boolean refreshNecessary = false;
@@ -315,7 +349,7 @@ public class mainController implements Initializable
         return refreshNecessary;
     }
 
-    /* Token refresh */
+    /* Token refresh, does not display anything on successful request */
     private boolean tokenRefreshHTTPRequest(String refresh_Token)
     {
         boolean successfulRequest = false;
@@ -352,15 +386,19 @@ public class mainController implements Initializable
                         while ((responseReader.readLine()) != null);
 
                         currentAthlete.refreshTokenUpdate(response);
-                        displayStatusBar("Token refresh successful.", 5000);
+                        successfulRequest = true;
                     }
-                    case 401 -> displayStatusBar("Token error: 401, Unauthorized.", 5000);
-                    case 403 -> displayStatusBar("Token error: 403, Forbidden, you cannot access.", 5000);
-                    case 404 -> displayStatusBar("Token error: 404, Not found.", 5000);
-                    case 429 -> displayStatusBar("Token error: 429, Too many requests. Try again later.", 5000);
-                    case 500 -> displayStatusBar("Token error: 500, Strava is having issues.", 5000);
+                    case 401 -> displayStatusBar("Token error: 401, Unauthorized.", 5000, "error");
+                    case 403 -> displayStatusBar("Token error: 403, Forbidden, you cannot access.", 5000, "error");
+                    case 404 -> displayStatusBar("Token error: 404, Not found.", 5000, "error");
+                    case 429 -> displayStatusBar("Token error: 429, Too many requests. Try again later.", 5000, "error");
+                    case 500 -> displayStatusBar("Token error: 500, Strava is having issues.", 5000, "error");
                 }
                 http.disconnect();
+            }
+            catch (UnknownHostException e)
+            {
+                displayStatusBar("Internet connection unknown or failed.", 7000, "error");
             }
             catch (IOException e)
             {
@@ -369,13 +407,13 @@ public class mainController implements Initializable
         }
         else
         {
-            displayStatusBar("Refresh error: Faulty refresh Token", 5000);
+            displayStatusBar("Refresh error: Faulty refresh Token", 5000, "error");
         }
 
         return successfulRequest;
     }
 
-    /* Retrieves athlete data with HTTP request to strava api, sends response to currentAthlete */
+    /* Retrieves athlete data with HTTP request to strava api, sends response to currentAthlete, does not display anything on successful request */
     private boolean athleteInfoHTTPRequest(String access_Token)
     {
         boolean successfulRequest = false;
@@ -404,16 +442,19 @@ public class mainController implements Initializable
                         while ((responseReader.readLine()) != null);
 
                         currentAthlete.athleteUpdate(response);
-                        displayStatusBar("Athlete information retrieval successful.", 5000);
                         successfulRequest = true;
                     }
-                    case 401 -> displayStatusBar("Token error: 401, Unauthorized.", 5000);
-                    case 403 -> displayStatusBar("Token error: 403, Forbidden, you cannot access.", 5000);
-                    case 404 -> displayStatusBar("Token error: 404, Not found.", 5000);
-                    case 429 -> displayStatusBar("Token error: 429, Too many requests. Try again later.", 5000);
-                    case 500 -> displayStatusBar("Token error: 500, Strava is having issues.", 5000);
+                    case 401 -> displayStatusBar("Token error: 401, Unauthorized.", 5000, "error");
+                    case 403 -> displayStatusBar("Token error: 403, Forbidden, you cannot access.", 5000, "error");
+                    case 404 -> displayStatusBar("Token error: 404, Not found.", 5000, "error");
+                    case 429 -> displayStatusBar("Token error: 429, Too many requests. Try again later.", 5000, "error");
+                    case 500 -> displayStatusBar("Token error: 500, Strava is having issues.", 5000, "error");
                 }
                 http.disconnect();
+            }
+            catch (UnknownHostException e)
+            {
+                displayStatusBar("Internet connection unknown or failed.", 7000, "error");
             }
             catch (IOException e)
             {
@@ -422,14 +463,75 @@ public class mainController implements Initializable
         }
         else
         {
-            displayStatusBar("Error: No access token found.", 5000);
+            displayStatusBar("Error: No access token found.", 5000, "error");
+        }
+
+        return successfulRequest;
+    }
+
+    /* Retrieves activity data */
+    private boolean activitiesHTTPRequest(String access_Token)
+    {
+        boolean successfulRequest = false;
+
+        if (access_Token != null)
+        {
+            try
+            {
+                //URL url = new URL("https://www.strava.com/api/v3/athlete/activities?before=1629494417&after=1230768000&per_page=200");
+                URL url = new URL("https://www.strava.com/api/v3/athlete/activities?page=2&per_page=200");
+
+                HttpURLConnection http = (HttpURLConnection)url.openConnection();
+                http.setRequestProperty("Authorization", "Bearer " + access_Token);
+
+                int responseCode = http.getResponseCode();
+
+                switch (responseCode)
+                {
+                    case 200 -> {
+                        BufferedReader responseReader = new BufferedReader(new InputStreamReader(http.getInputStream()));
+                        String response;
+
+                        do
+                        {
+                            response = responseReader.readLine();
+                        }
+                        while ((responseReader.readLine()) != null);
+
+                        //response = "{\"activities\":" + response + "}";
+
+                        JSONArray activities = new JSONArray(response);
+
+                        successfulRequest = true;
+                    }
+                    case 401 -> displayStatusBar("Token error: 401, Unauthorized.", 5000, "error");
+                    case 403 -> displayStatusBar("Token error: 403, Forbidden, you cannot access.", 5000, "error");
+                    case 404 -> displayStatusBar("Token error: 404, Not found.", 5000, "error");
+                    case 429 -> displayStatusBar("Token error: 429, Too many requests. Try again later.", 5000, "error");
+                    case 500 -> displayStatusBar("Token error: 500, Strava is having issues.", 5000, "error");
+                }
+                http.disconnect();
+            }
+            catch (UnknownHostException e)
+            {
+                displayStatusBar("Internet connection unknown or failed.", 7000, "error");
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        }
+        else
+        {
+            displayStatusBar("Error: No access token found.", 5000, "error");
         }
 
         return successfulRequest;
     }
 
     /** UI methods **/
-    private void displayStatusBar(String text, int durationMillis)
+    /* Displays a statusbar with message for duration (milliseconds) */
+    private void displayStatusBar(String text, int durationMillis, String iconType)
     {
         /* Throws error if shorter than 500 milliseconds */
         if (durationMillis < 500)
@@ -445,6 +547,28 @@ public class mainController implements Initializable
 
         /* Enables status bar*/
         statusBarLabel.setText(text);
+
+        switch (iconType)
+        {
+            case "error" :
+                statusIconPane.setStyle("-fx-background-color: #ab4642; -fx-shape: \"M439.15 453.06L297.17 384l141.99-69.06c7.9-3.95 11.11-13.56 7.15-21.46L432 264.85c-3.95-7.9-13.56-11.11-21.47-7.16L224 348.41 37.47 257.69c-7.9-3.95-17.51-.75-21.47 7.16L1.69 293.48c-3.95 7.9-.75 17.51 7.15 21.46L150.83 384 8.85 453.06c-7.9 3.95-11.11 13.56-7.15 21.47l14.31 28.63c3.95 7.9 13.56 11.11 21.47 7.15L224 419.59l186.53 90.72c7.9 3.95 17.51.75 21.47-7.15l14.31-28.63c3.95-7.91.74-17.52-7.16-21.47zM150 237.28l-5.48 25.87c-2.67 12.62 5.42 24.85 16.45 24.85h126.08c11.03 0 19.12-12.23 16.45-24.85l-5.5-25.87c41.78-22.41 70-62.75 70-109.28C368 57.31 303.53 0 224 0S80 57.31 80 128c0 46.53 28.22 86.87 70 109.28zM280 112c17.65 0 32 14.35 32 32s-14.35 32-32 32-32-14.35-32-32 14.35-32 32-32zm-112 0c17.65 0 32 14.35 32 32s-14.35 32-32 32-32-14.35-32-32 14.35-32 32-32z\";");
+                statusIconPane.setPrefHeight(24);
+                statusIconPane.setPrefWidth(21);
+                statusIconPane.setLayoutY(10);
+                break;
+            case "alert" :
+                statusIconPane.setStyle("-fx-background-color: #7cafc2; -fx-shape: \"M504 256c0 136.997-111.043 248-248 248S8 392.997 8 256C8 119.083 119.043 8 256 8s248 111.083 248 248zm-248 50c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z\"");
+                statusIconPane.setPrefHeight(24);
+                statusIconPane.setPrefWidth(24);
+                statusIconPane.setLayoutY(10);
+                break;
+            case "success" :
+                statusIconPane.setStyle("-fx-background-color: #a1b56c; -fx-shape: \"M248 8C111 8 0 119 0 256s111 248 248 248 248-111 248-248S385 8 248 8zm141.4 389.4c-37.8 37.8-88 58.6-141.4 58.6s-103.6-20.8-141.4-58.6S48 309.4 48 256s20.8-103.6 58.6-141.4S194.6 56 248 56s103.6 20.8 141.4 58.6S448 202.6 448 256s-20.8 103.6-58.6 141.4zM328 152c-23.8 0-52.7 29.3-56 71.4-.7 8.6 10.8 11.9 14.9 4.5l9.5-17c7.7-13.7 19.2-21.6 31.5-21.6s23.8 7.9 31.5 21.6l9.5 17c4.1 7.4 15.6 4 14.9-4.5-3.1-42.1-32-71.4-55.8-71.4zm-201 75.9l9.5-17c7.7-13.7 19.2-21.6 31.5-21.6s23.8 7.9 31.5 21.6l9.5 17c4.1 7.4 15.6 4 14.9-4.5-3.3-42.1-32.2-71.4-56-71.4s-52.7 29.3-56 71.4c-.6 8.5 10.9 11.9 15.1 4.5zM362.4 288H133.6c-8.2 0-14.5 7-13.5 15 7.5 59.2 58.9 105 121.1 105h13.6c62.2 0 113.6-45.8 121.1-105 1-8-5.3-15-13.5-15z\";");
+                statusIconPane.setPrefHeight(24);
+                statusIconPane.setPrefWidth(23);
+                statusIconPane.setLayoutY(10);
+                break;
+        }
 
         statusBarPane.setOpacity(1.0);
         statusBarLabel.setOpacity(1.0);
@@ -477,6 +601,7 @@ public class mainController implements Initializable
         timeline.playFromStart();
     }
 
+    /* Animates navbar background */
     private void animatedNavBarBG()
     {
         Animation animation = new Timeline(new KeyFrame(Duration.millis(10), e ->
@@ -660,41 +785,22 @@ public class mainController implements Initializable
             if (elapsedHundredths % 15 == 0)
             {
                 /* Checks so hue 1 isn't outside range */
-                if (hue1 >= maxHue)
+                if (hue >= maxHue)
                 {
                     addHue = false;
                 }
-                if (hue1 <= minHue)
+                if (hue <= minHue)
                 {
                     addHue = true;
                 }
                 if (addHue)
                 {
-                    hue1++;
+                    hue++;
                 }
                 else
                 {
-                    hue1--;
+                    hue--;
                 }
-
-                /* Hue 2 Modifier */
-                if (hueMod >= maxHueMod)
-                {
-                    addHueMod = false;
-                }
-                if (hueMod <= minHueMod)
-                {
-                    addHueMod = true;
-                }
-                if (addHueMod)
-                {
-                    hueMod++;
-                }
-                else
-                {
-                    hueMod--;
-                }
-                hue2 = hue1 + hueMod;
             }
 
             /* Luminosity */
@@ -721,7 +827,7 @@ public class mainController implements Initializable
             }
 
             /* Creates color1 from all variables above */
-            Color color1 = Color.web("hsl(" + hue1 + "," + saturation + "%," + luminosity + "%)");
+            Color color1 = Color.web("hsl(" + hue + "," + saturation + "%," + luminosity + "%)");
             String color1String = "rgb(" + (int) (color1.getRed() * 255) + "," + (int) (color1.getGreen() * 255) + "," + (int) (color1.getBlue() * 255) + ")";
 
             /* Transparency */
@@ -750,7 +856,7 @@ public class mainController implements Initializable
             }
 
             /* Creates color 2 from hue of color2 and transparancy*/
-            Color color2 = Color.web("hsl(" + (hue1 + 50) + ",100%,50%)");
+            Color color2 = Color.web("hsl(" + (hue + 50) + ",100%,50%)");
             String color2String = "rgba(" + (int) (color2.getRed() * 255) + "," + (int) (color2.getGreen() * 255) + "," + (int) (color2.getBlue() * 255) + "," + transparency + ")";
 
             /* Style setter */
@@ -759,6 +865,31 @@ public class mainController implements Initializable
         }));
         animation.setCycleCount(Timeline.INDEFINITE);
         animation.play();
+    }
+
+    /* Changes logged in state on connect with strava icon */
+    private void updateLoggedInIcon(boolean value)
+    {
+        currentAthlete.setLoggedIn(value);
+
+        if (currentAthlete.getLoggedIn())
+        {
+            stravaConnectedAP.toFront();
+            stravaConnectedAP.setOpacity(1.0);
+
+            authorizationButton.setOpacity(0.0);
+            authorizationButton.setDisable(true);
+            authorizationButton.toBack();
+        }
+        else
+        {
+            authorizationButton.setOpacity(1.0);
+            authorizationButton.setDisable(false);
+            authorizationButton.toFront();
+
+            stravaConnectedAP.toBack();
+            stravaConnectedAP.setOpacity(0.0);
+        }
     }
 
     /** Handles task buttons **/
@@ -776,6 +907,7 @@ public class mainController implements Initializable
     }
     public void logoButton_Action()
     {
+        activitiesHTTPRequest(currentAthlete.getAccess_Token());
     }
     public void settingsButton_Action()
     {
@@ -783,8 +915,10 @@ public class mainController implements Initializable
     }
     public void refreshButton_Action()
     {
-        /* Refresh access token */
-        /* Refresh athlete */
+        if(tokenRefreshHTTPRequest(currentAthlete.getRefresh_Token()) && athleteInfoHTTPRequest(currentAthlete.getAccess_Token()))
+        {
+            displayStatusBar("Athlete information refresh successful.", 3000, "success");
+        }
         /* Refresh activities */
     }
     public void signOutButton_Action()
@@ -794,12 +928,14 @@ public class mainController implements Initializable
         if (athleteInformation.delete() && tokenData.delete())
         {
             currentAthlete = new Athlete();
-            displayStatusBar("Signed out athlete." , 3000);
+            displayStatusBar("Signed out athlete." , 3000, "alert");
         }
         else
         {
-            displayStatusBar("Sign out failed.", 3000);
+            displayStatusBar("Sign out failed.", 3000, "error");
         }
+
+        updateLoggedInIcon(false);
     }
     public void backButton_Action()
     {
@@ -814,7 +950,6 @@ public class mainController implements Initializable
 
     public void maxRestoreButton_Action()
     {
-        //main.window.setMaximized(!main.window.isMaximized());
         Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
 
         if (!isMaximized)

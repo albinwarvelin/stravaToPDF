@@ -9,6 +9,8 @@ import org.json.JSONObject;
 
 public class Athlete
 {
+    private boolean isLoggedIn = false;
+
     /** App resources **/
     private String token_Type;
     private long expires_At = 0;
@@ -181,6 +183,7 @@ public class Athlete
         catch (FileNotFoundException e)
         {
             dataAvailable = false;
+
         }
         catch (IOException e)
         {
@@ -222,11 +225,6 @@ public class Athlete
             {
                 JSONObject loadedJSONObject = new JSONObject(jsonString);
 
-                access_Token = loadedJSONObject.getString("access_token");
-                refresh_Token = loadedJSONObject.getString("refresh_token");
-                expires_In = loadedJSONObject.getInt("expires_in");
-                expires_At = loadedJSONObject.getInt("expires_at");
-                token_Type = loadedJSONObject.getString("token_type");
                 id = loadedJSONObject.getInt("id");
                 username = loadedJSONObject.getString("username");
                 firstname = loadedJSONObject.getString("firstname");
@@ -441,6 +439,10 @@ public class Athlete
     }
 
     /** Athlete information get and set methods**/
+    public boolean getLoggedIn()
+    {
+        return isLoggedIn;
+    }
     public int getId()
     {
         return id;
@@ -534,6 +536,10 @@ public class Athlete
         return bikesHashMap;
     }
 
+    public void setLoggedIn(boolean value)
+    {
+        isLoggedIn = value;
+    }
     public void setId(int input)
     {
         id = input;
@@ -616,4 +622,6 @@ public class Athlete
     {
         measurement_Preference = input;
     }
+
+
 }
