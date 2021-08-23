@@ -145,7 +145,7 @@ public class Athlete
         {
             JSONObject tokenData = tokenDataToJSONObject();
 
-            BufferedWriter athleteDataWriter = new BufferedWriter(new FileWriter("src/mainApp/athleteData/tokenData.txt"));
+            BufferedWriter athleteDataWriter = new BufferedWriter(new FileWriter("src/mainApp/athleteData/tokenData.json"));
             athleteDataWriter.write(tokenData.toString());
 
             athleteDataWriter.close();
@@ -162,7 +162,7 @@ public class Athlete
 
         try
         {
-            BufferedReader athleteDataReader = new BufferedReader(new FileReader("src/mainApp/athleteData/tokenData.txt"));
+            BufferedReader athleteDataReader = new BufferedReader(new FileReader("src/mainApp/athleteData/tokenData.json"));
             String jsonString = athleteDataReader.readLine();
 
             if (!jsonString.equals(""))
@@ -200,7 +200,7 @@ public class Athlete
         {
             JSONObject athleteData = athleteDataToJSONObject();
 
-            BufferedWriter athleteDataWriter = new BufferedWriter(new FileWriter("src/mainApp/athleteData/athleteInformation.txt"));
+            BufferedWriter athleteDataWriter = new BufferedWriter(new FileWriter("src/mainApp/athleteData/athleteInformation.json"));
             athleteDataWriter.write(athleteData.toString());
 
             athleteDataWriter.close();
@@ -218,7 +218,7 @@ public class Athlete
 
         try
         {
-            BufferedReader athleteDataReader = new BufferedReader(new FileReader("src/mainApp/athleteData/athleteInformation.txt"));
+            BufferedReader athleteDataReader = new BufferedReader(new FileReader("src/mainApp/athleteData/athleteInformation.json"));
             String jsonString = athleteDataReader.readLine();
 
             if (!jsonString.equals(""))

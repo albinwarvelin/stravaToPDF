@@ -214,8 +214,8 @@
                      <children>
                         <Pane fx:id="statusBarPane" maxHeight="45.0" styleClass="statusBarPane">
                            <children>
-                              <Pane fx:id="statusIconPane" layoutX="11.0" layoutY="10.0" prefHeight="24.0" prefWidth="24.0" />
-                              <Label fx:id="statusBarLabel" layoutX="34.0" layoutY="13.0" minHeight="0.0" minWidth="0.0" styleClass="statusBarLabel" text="200 Activities loaded">
+                              <Pane fx:id="statusIconPane" layoutX="11.0" layoutY="10.0" prefHeight="24.0" prefWidth="21.0" styleClass="statusBarIcon" />
+                              <Label fx:id="statusBarLabel" layoutX="39.0" layoutY="13.0" minHeight="0.0" minWidth="0.0" styleClass="statusBarLabel" text="200 Activities loaded">
                                  <padding>
                                     <Insets left="5.0" right="5.0" />
                                  </padding>

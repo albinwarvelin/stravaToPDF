@@ -12,10 +12,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.web.WebView;
 import javafx.stage.Screen;
 import javafx.util.Duration;
-import mainApp.Athlete;
-import mainApp.ResizeHelper;
-import mainApp.Toolbox;
-import mainApp.main;
+import mainApp.*;
 import org.json.JSONArray;
 
 import java.io.*;
@@ -38,11 +35,13 @@ public class mainController implements Initializable
     private double maximizedSizeX;
     private double maximizedSizeY;
 
-    private double previousWindowWidth;
-    private double previousWindowHeight;
+    private double previousWindowWidth = 1280;
+    private double previousWindowHeight = 720;
 
     private double previousWindowX;
     private double previousWindowY;
+
+    private boolean firstResize = true;
 
     /* Scene */
     public StackPane contentSP;
@@ -101,8 +100,8 @@ public class mainController implements Initializable
     public void initialize(URL url, ResourceBundle resourceBundle)
     {
         makeScreenDraggable(topHBox);
-
         currentAthlete = new Athlete();
+        isMaximized = main.userPreferences.wantFullscreen();
 
         /* Loads token data from file, if refresh is necessary HTTP request is sent and access token is updated */
         if (currentAthlete.loadTokenDataFromFile())
@@ -923,8 +922,8 @@ public class mainController implements Initializable
     }
     public void signOutButton_Action()
     {
-        File athleteInformation = new File("src/mainApp/athleteData/athleteInformation.txt");
-        File tokenData = new File("src/mainApp/athleteData/tokenData.txt");
+        File athleteInformation = new File("src/mainApp/athleteData/athleteInformation.json");
+        File tokenData = new File("src/mainApp/athleteData/tokenData.json");
         if (athleteInformation.delete() && tokenData.delete())
         {
             currentAthlete = new Athlete();
@@ -972,16 +971,25 @@ public class mainController implements Initializable
             main.window.setWidth(previousWindowWidth);
             main.window.setHeight(previousWindowHeight);
 
-            main.window.setX(previousWindowX);
-            main.window.setY(previousWindowY);
+            if (previousWindowX == 0 && firstResize && previousWindowY == 0)
+            {
+                main.window.centerOnScreen();
+            }
+            else
+            {
+                main.window.setX(previousWindowX);
+                main.window.setY(previousWindowY);
+            }
 
             isMaximized = false;
         }
+
+        main.userPreferences.setFullscreen(isMaximized);
     }
 
     public void closeButton_Action()
     {
-        main.window.close();
+        main.close();
     }
 
     /* Run on initialization */
