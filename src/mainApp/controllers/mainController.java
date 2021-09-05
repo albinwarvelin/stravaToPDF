@@ -6,14 +6,17 @@ import javafx.animation.Timeline;
 import javafx.concurrent.Worker;
 import javafx.fxml.Initializable;
 import javafx.geometry.Rectangle2D;
-import javafx.scene.control.Label;
+import javafx.scene.Node;
+import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.web.WebView;
 import javafx.stage.Screen;
+import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import mainApp.*;
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -21,6 +24,11 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.ResourceBundle;
 
 public class mainController implements Initializable
@@ -43,8 +51,19 @@ public class mainController implements Initializable
 
     private boolean firstResize = true;
 
-    /* Scene */
-    public StackPane contentSP;
+    /** Scene **/
+    public StackPane outerContentSP; //Only used for webview, fills whole area
+    public StackPane innerContentSP; //Used in almost all cases
+
+    /* Main */
+    public AnchorPane mainAP; //Main anchorpane
+
+    /* Activity loader */
+    public AnchorPane activityLoaderAP; //Used in activity loading from strava
+    public DatePicker aL_toDatePicker;
+    public DatePicker aL_fromDatePicker;
+
+    /* Misc */
     public WebView authorizationWV;
     public HBox topHBox;
     public StackPane authorizationSP;
@@ -52,17 +71,22 @@ public class mainController implements Initializable
     public BorderPane mainBG;
     public Pane authorizationButton;
     public AnchorPane stravaConnectedAP;
-    public Label activitiesLoadedLabel;
-    public Label activitiesDateLabel;
+    public Label connectedLabel;
+    public DatePicker toDatePicker;
+    public DatePicker fromDatePicker;
 
-    /* Status bar */
+    /** Status bar **/
+    public enum StatusType {ALERT, ERROR, SUCCESS}
     public Label statusBarLabel;
     public Pane statusBarPane;
     public Pane statusIconPane;
     private Timeline timeline;
     private int timeTicks;
 
-    /* NavBar background animation */
+    /** Prompt **/
+    public enum PromptType {CONFIRMATION}
+
+    /** NavBar background animation **/
     private long elapsedHundredths; //100 fps
 
     private double speed = 0.050;
@@ -91,9 +115,12 @@ public class mainController implements Initializable
     private double BXPercentage = 50.00;
     private double BYPercentage = 100.00;
 
+    private String gradientString;
+
     /* Variables */
     private boolean webViewFinished;
     public Athlete currentAthlete;
+    public long lastActivityRequest = 0;
 
     /* Run on first startup */
     @Override
@@ -103,12 +130,12 @@ public class mainController implements Initializable
         currentAthlete = new Athlete();
         isMaximized = main.userPreferences.wantFullscreen();
 
-        /* Loads token data from file, if refresh is necessary HTTP request is sent and access token is updated */
+        /* Loads token data from file, if refresh is necessary HTTP request is sent and access token is updated. Also updates athlete to newest version */
         if (currentAthlete.loadTokenDataFromFile())
         {
             boolean successfulTokenRefresh = false;
 
-            displayStatusBar("Token data loaded from file.", 5000, "alert");
+            displayStatusBar("Token data loaded from file.", 5000, StatusType.ALERT);
 
             if (checkRefreshNecessary())
             {
@@ -122,11 +149,11 @@ public class mainController implements Initializable
             {
                 if (successfulTokenRefresh)
                 {
-                    displayStatusBar("Token refresh and athlete refresh successful.", 3000, "success");
+                    displayStatusBar("Token refresh and athlete refresh successful.", 3000, StatusType.SUCCESS);
                 }
                 else
                 {
-                    displayStatusBar("Athlete information refresh successful. Token refresh not needed.", 3000, "success");
+                    displayStatusBar("Athlete information refresh successful. Token refresh not needed.", 3000, StatusType.SUCCESS);
                 }
 
                 currentAthlete.saveAthleteDataToFile();
@@ -141,9 +168,8 @@ public class mainController implements Initializable
         else
         {
             updateLoggedInIcon(false);
-            displayStatusBar("No athlete connected, log in.", 2000, "alert");
+            displayStatusBar("No athlete connected, log in.", 2000, StatusType.ALERT);
         }
-
 
         animatedNavBarBG();
     }
@@ -157,7 +183,7 @@ public class mainController implements Initializable
 
         webViewFinished = false;
 
-        displayStatusBar("Strava authorization loading....", 2000, "alert");
+        displayStatusBar("Strava authorization loading....", 2000, StatusType.ALERT);
 
         authorizationWV.getEngine().getLoadWorker().stateProperty().addListener((observable, oldState, newState) ->
         {
@@ -169,7 +195,7 @@ public class mainController implements Initializable
                 {
                     stopAuthorizationWV();
 
-                    displayStatusBar("Error: App cannot leave authorization.", 2000, "error");
+                    displayStatusBar("Error: App cannot leave authorization.", 2000, StatusType.ERROR);
                 }
             }
 
@@ -180,12 +206,19 @@ public class mainController implements Initializable
                 {
                     stopAuthorizationWV();
 
-                    displayStatusBar("Error: No internet connection.", 5000, "error");
+                    displayStatusBar("Error: No internet connection.", 5000, StatusType.ERROR);
                 }
 
                 /* Checks if domain is localhost, if true program handles url with parameters */
-                String urlString = authorizationWV.getEngine().getLocation();
-                String urlDomain = urlString.substring(Toolbox.findNIndexOf('/', 2, urlString) + 1, Toolbox.findNIndexOf('/', 3, urlString));
+                String urlString = "";
+                String urlDomain = "";
+
+                urlString = authorizationWV.getEngine().getLocation();
+
+                if (!urlString.equals(""))
+                {
+                    urlDomain = urlString.substring(Toolbox.findNIndexOf('/', 2, urlString) + 1, Toolbox.findNIndexOf('/', 3, urlString));
+                }
 
                 if (urlDomain.equals("localhost"))
                 {
@@ -198,7 +231,7 @@ public class mainController implements Initializable
             if (newState == Worker.State.SUCCEEDED)
             {
                 /* Brings webview to front if not in front */
-                if (contentSP.getChildren().get(contentSP.getChildren().size() - 1) != authorizationWV && !webViewFinished)
+                if (outerContentSP.getChildren().get(outerContentSP.getChildren().size() - 1) != authorizationWV && !webViewFinished)
                 {
                     authorizationWV.toFront();
                 }
@@ -243,11 +276,11 @@ public class mainController implements Initializable
 
             if (error.equals("access_denied"))
             {
-                displayStatusBar("Error: No access given.", 7000, "error");
+                displayStatusBar("Error: No access given.", 7000, StatusType.ERROR);
             }
             else
             {
-                displayStatusBar("Error: Unknown error: " + error, 10000, "error");
+                displayStatusBar("Error: Unknown error: " + error, 10000, StatusType.ERROR);
             }
         }
 
@@ -258,7 +291,7 @@ public class mainController implements Initializable
 
             if (!scope.equals("read,activity:read_all,profile:read_all,read_all"))
             {
-                displayStatusBar("Error: Not all access given.", 10000, "error");
+                displayStatusBar("Error: Not all access given.", 10000, StatusType.ERROR);
             }
 
             /* If scopes are allowed, program extracts authorization code */
@@ -270,7 +303,7 @@ public class mainController implements Initializable
                 authTokenHTTPRequest(code);
                 if(athleteInfoHTTPRequest(currentAthlete.getAccess_Token()))
                 {
-                    displayStatusBar("Athlete information retrieval successful.", 5000, "success");
+                    displayStatusBar("Athlete information retrieval successful.", 5000, StatusType.SUCCESS);
 
                     updateLoggedInIcon(true);
 
@@ -315,13 +348,13 @@ public class mainController implements Initializable
 
                     currentAthlete.tokenUpdate(response);
 
-                    displayStatusBar("Athlete information retrieval successful.", 5000, "success");
+                    displayStatusBar("Athlete information retrieval successful.", 5000, StatusType.SUCCESS);
                 }
-                case 401 -> displayStatusBar("Token error: 401, Unauthorized.", 5000, "error");
-                case 403 -> displayStatusBar("Token error: 403, Forbidden, you cannot access.", 5000, "error");
-                case 404 -> displayStatusBar("Token error: 404, Not found.", 5000, "error");
-                case 429 -> displayStatusBar("Token error: 429, Too many requests. Try again later.", 5000, "error");
-                case 500 -> displayStatusBar("Token error: 500, Strava is having issues.", 5000, "error");
+                case 401 -> displayStatusBar("Token error: 401, Unauthorized.", 5000, StatusType.ERROR);
+                case 403 -> displayStatusBar("Token error: 403, Forbidden, you cannot access.", 5000, StatusType.ERROR);
+                case 404 -> displayStatusBar("Token error: 404, Not found.", 5000, StatusType.ERROR);
+                case 429 -> displayStatusBar("Token error: 429, Too many requests. Try again later.", 5000, StatusType.ERROR);
+                case 500 -> displayStatusBar("Token error: 500, Strava is having issues.", 5000, StatusType.ERROR);
             }
             http.disconnect();
         }
@@ -387,17 +420,17 @@ public class mainController implements Initializable
                         currentAthlete.refreshTokenUpdate(response);
                         successfulRequest = true;
                     }
-                    case 401 -> displayStatusBar("Token error: 401, Unauthorized.", 5000, "error");
-                    case 403 -> displayStatusBar("Token error: 403, Forbidden, you cannot access.", 5000, "error");
-                    case 404 -> displayStatusBar("Token error: 404, Not found.", 5000, "error");
-                    case 429 -> displayStatusBar("Token error: 429, Too many requests. Try again later.", 5000, "error");
-                    case 500 -> displayStatusBar("Token error: 500, Strava is having issues.", 5000, "error");
+                    case 401 -> displayStatusBar("Token error: 401, Unauthorized.", 5000, StatusType.ERROR);
+                    case 403 -> displayStatusBar("Token error: 403, Forbidden, you cannot access.", 5000, StatusType.ERROR);
+                    case 404 -> displayStatusBar("Token error: 404, Not found.", 5000, StatusType.ERROR);
+                    case 429 -> displayStatusBar("Token error: 429, Too many requests. Try again later.", 5000, StatusType.ERROR);
+                    case 500 -> displayStatusBar("Token error: 500, Strava is having issues.", 5000, StatusType.ERROR);
                 }
                 http.disconnect();
             }
             catch (UnknownHostException e)
             {
-                displayStatusBar("Internet connection unknown or failed.", 7000, "error");
+                displayStatusBar("Internet connection unknown or failed.", 7000, StatusType.ERROR);
             }
             catch (IOException e)
             {
@@ -406,7 +439,7 @@ public class mainController implements Initializable
         }
         else
         {
-            displayStatusBar("Refresh error: Faulty refresh Token", 5000, "error");
+            displayStatusBar("Refresh error: Faulty refresh Token", 5000, StatusType.ERROR);
         }
 
         return successfulRequest;
@@ -443,17 +476,17 @@ public class mainController implements Initializable
                         currentAthlete.athleteUpdate(response);
                         successfulRequest = true;
                     }
-                    case 401 -> displayStatusBar("Token error: 401, Unauthorized.", 5000, "error");
-                    case 403 -> displayStatusBar("Token error: 403, Forbidden, you cannot access.", 5000, "error");
-                    case 404 -> displayStatusBar("Token error: 404, Not found.", 5000, "error");
-                    case 429 -> displayStatusBar("Token error: 429, Too many requests. Try again later.", 5000, "error");
-                    case 500 -> displayStatusBar("Token error: 500, Strava is having issues.", 5000, "error");
+                    case 401 -> displayStatusBar("Token error: 401, Unauthorized.", 5000, StatusType.ERROR);
+                    case 403 -> displayStatusBar("Token error: 403, Forbidden, you cannot access.", 5000, StatusType.ERROR);
+                    case 404 -> displayStatusBar("Token error: 404, Not found.", 5000, StatusType.ERROR);
+                    case 429 -> displayStatusBar("Token error: 429, Too many requests. Try again later.", 5000, StatusType.ERROR);
+                    case 500 -> displayStatusBar("Token error: 500, Strava is having issues.", 5000, StatusType.ERROR);
                 }
                 http.disconnect();
             }
             catch (UnknownHostException e)
             {
-                displayStatusBar("Internet connection unknown or failed.", 7000, "error");
+                displayStatusBar("Internet connection unknown or failed.", 7000, StatusType.ERROR);
             }
             catch (IOException e)
             {
@@ -462,14 +495,14 @@ public class mainController implements Initializable
         }
         else
         {
-            displayStatusBar("Error: No access token found.", 5000, "error");
+            displayStatusBar("Error: No access token found.", 5000, StatusType.ERROR);
         }
 
         return successfulRequest;
     }
 
-    /* Retrieves activity data */
-    private boolean activitiesHTTPRequest(String access_Token)
+    /* Retrieves activity data between two timestamps */
+    private boolean activityListHTTPRequest(String access_Token, long fromTimestamp, long toTimestamp)
     {
         boolean successfulRequest = false;
 
@@ -477,8 +510,7 @@ public class mainController implements Initializable
         {
             try
             {
-                //URL url = new URL("https://www.strava.com/api/v3/athlete/activities?before=1629494417&after=1230768000&per_page=200");
-                URL url = new URL("https://www.strava.com/api/v3/athlete/activities?page=2&per_page=200");
+                URL url = new URL("https://www.strava.com/api/v3/athlete/activities?before=" + toTimestamp + "&after=" + fromTimestamp + "&per_page=80");
 
                 HttpURLConnection http = (HttpURLConnection)url.openConnection();
                 http.setRequestProperty("Authorization", "Bearer " + access_Token);
@@ -497,23 +529,27 @@ public class mainController implements Initializable
                         }
                         while ((responseReader.readLine()) != null);
 
-                        //response = "{\"activities\":" + response + "}";
+                        JSONArray activityList = new JSONArray(response);
+                        ArrayList<Integer> idList = new ArrayList<>();
 
-                        JSONArray activities = new JSONArray(response);
+                        for (int i = 0; i < activityList.length(); i++)
+                        {
+                            idList.add(activityList.getJSONObject(i).getInt("id"));
+                        }
 
                         successfulRequest = true;
                     }
-                    case 401 -> displayStatusBar("Token error: 401, Unauthorized.", 5000, "error");
-                    case 403 -> displayStatusBar("Token error: 403, Forbidden, you cannot access.", 5000, "error");
-                    case 404 -> displayStatusBar("Token error: 404, Not found.", 5000, "error");
-                    case 429 -> displayStatusBar("Token error: 429, Too many requests. Try again later.", 5000, "error");
-                    case 500 -> displayStatusBar("Token error: 500, Strava is having issues.", 5000, "error");
+                    case 401 -> displayStatusBar("Token error: 401, Unauthorized.", 5000, StatusType.ERROR);
+                    case 403 -> displayStatusBar("Token error: 403, Forbidden, you cannot access.", 5000, StatusType.ERROR);
+                    case 404 -> displayStatusBar("Token error: 404, Not found.", 5000, StatusType.ERROR);
+                    case 429 -> displayStatusBar("Token error: 429, Too many requests. Try again later.", 5000, StatusType.ERROR);
+                    case 500 -> displayStatusBar("Token error: 500, Strava is having issues.", 5000, StatusType.ERROR);
                 }
                 http.disconnect();
             }
             catch (UnknownHostException e)
             {
-                displayStatusBar("Internet connection unknown or failed.", 7000, "error");
+                displayStatusBar("Internet connection unknown or failed.", 7000, StatusType.ERROR);
             }
             catch (IOException e)
             {
@@ -522,15 +558,22 @@ public class mainController implements Initializable
         }
         else
         {
-            displayStatusBar("Error: No access token found.", 5000, "error");
+            displayStatusBar("Error: No access token found.", 5000, StatusType.ERROR);
         }
 
         return successfulRequest;
     }
 
+    /* To be looped through */
+    private boolean singleActivityHTTPRequest(int activityID)
+    {
+
+        return true;
+    }
+
     /** UI methods **/
     /* Displays a statusbar with message for duration (milliseconds) */
-    private void displayStatusBar(String text, int durationMillis, String iconType)
+    private void displayStatusBar(String text, int durationMillis, StatusType statusType)
     {
         /* Throws error if shorter than 500 milliseconds */
         if (durationMillis < 500)
@@ -547,21 +590,21 @@ public class mainController implements Initializable
         /* Enables status bar*/
         statusBarLabel.setText(text);
 
-        switch (iconType)
+        switch (statusType)
         {
-            case "error" :
+            case ERROR:
                 statusIconPane.setStyle("-fx-background-color: #ab4642; -fx-shape: \"M439.15 453.06L297.17 384l141.99-69.06c7.9-3.95 11.11-13.56 7.15-21.46L432 264.85c-3.95-7.9-13.56-11.11-21.47-7.16L224 348.41 37.47 257.69c-7.9-3.95-17.51-.75-21.47 7.16L1.69 293.48c-3.95 7.9-.75 17.51 7.15 21.46L150.83 384 8.85 453.06c-7.9 3.95-11.11 13.56-7.15 21.47l14.31 28.63c3.95 7.9 13.56 11.11 21.47 7.15L224 419.59l186.53 90.72c7.9 3.95 17.51.75 21.47-7.15l14.31-28.63c3.95-7.91.74-17.52-7.16-21.47zM150 237.28l-5.48 25.87c-2.67 12.62 5.42 24.85 16.45 24.85h126.08c11.03 0 19.12-12.23 16.45-24.85l-5.5-25.87c41.78-22.41 70-62.75 70-109.28C368 57.31 303.53 0 224 0S80 57.31 80 128c0 46.53 28.22 86.87 70 109.28zM280 112c17.65 0 32 14.35 32 32s-14.35 32-32 32-32-14.35-32-32 14.35-32 32-32zm-112 0c17.65 0 32 14.35 32 32s-14.35 32-32 32-32-14.35-32-32 14.35-32 32-32z\";");
                 statusIconPane.setPrefHeight(24);
                 statusIconPane.setPrefWidth(21);
                 statusIconPane.setLayoutY(10);
                 break;
-            case "alert" :
+            case ALERT:
                 statusIconPane.setStyle("-fx-background-color: #7cafc2; -fx-shape: \"M504 256c0 136.997-111.043 248-248 248S8 392.997 8 256C8 119.083 119.043 8 256 8s248 111.083 248 248zm-248 50c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z\"");
                 statusIconPane.setPrefHeight(24);
                 statusIconPane.setPrefWidth(24);
                 statusIconPane.setLayoutY(10);
                 break;
-            case "success" :
+            case SUCCESS:
                 statusIconPane.setStyle("-fx-background-color: #a1b56c; -fx-shape: \"M248 8C111 8 0 119 0 256s111 248 248 248 248-111 248-248S385 8 248 8zm141.4 389.4c-37.8 37.8-88 58.6-141.4 58.6s-103.6-20.8-141.4-58.6S48 309.4 48 256s20.8-103.6 58.6-141.4S194.6 56 248 56s103.6 20.8 141.4 58.6S448 202.6 448 256s-20.8 103.6-58.6 141.4zM328 152c-23.8 0-52.7 29.3-56 71.4-.7 8.6 10.8 11.9 14.9 4.5l9.5-17c7.7-13.7 19.2-21.6 31.5-21.6s23.8 7.9 31.5 21.6l9.5 17c4.1 7.4 15.6 4 14.9-4.5-3.1-42.1-32-71.4-55.8-71.4zm-201 75.9l9.5-17c7.7-13.7 19.2-21.6 31.5-21.6s23.8 7.9 31.5 21.6l9.5 17c4.1 7.4 15.6 4 14.9-4.5-3.3-42.1-32.2-71.4-56-71.4s-52.7 29.3-56 71.4c-.6 8.5 10.9 11.9 15.1 4.5zM362.4 288H133.6c-8.2 0-14.5 7-13.5 15 7.5 59.2 58.9 105 121.1 105h13.6c62.2 0 113.6-45.8 121.1-105 1-8-5.3-15-13.5-15z\";");
                 statusIconPane.setPrefHeight(24);
                 statusIconPane.setPrefWidth(23);
@@ -859,7 +902,7 @@ public class mainController implements Initializable
             String color2String = "rgba(" + (int) (color2.getRed() * 255) + "," + (int) (color2.getGreen() * 255) + "," + (int) (color2.getBlue() * 255) + "," + transparency + ")";
 
             /* Style setter */
-            String gradientString = "#000000, linear-gradient(from " + AXPercentage + "% " + AYPercentage + "% to " + BXPercentage + "% " + BYPercentage + "%, " + color1String + ", " + color2String + ")";
+            gradientString = "#000000, linear-gradient(from " + AXPercentage + "% " + AYPercentage + "% to " + BXPercentage + "% " + BYPercentage + "%, " + color1String + ", " + color2String + ")";
             navBarBG.setStyle("-fx-background-color:" + gradientString);
         }));
         animation.setCycleCount(Timeline.INDEFINITE);
@@ -891,22 +934,76 @@ public class mainController implements Initializable
         }
     }
 
-    /** Handles task buttons **/
+    /* Displays a confirmation prompt */
+    public boolean displayPrompt(String headerText, String contentText, PromptType promptType)
+    {
+        boolean returnBoolean = false;
+
+        switch (promptType)
+        {
+            case CONFIRMATION:
+            {
+                Alert alert = new Alert(Alert.AlertType.CONFIRMATION, contentText, ButtonType.YES, ButtonType.NO);
+                alert.setHeaderText(headerText);
+
+                alert.initStyle(StageStyle.TRANSPARENT);
+                alert.getDialogPane().getScene().setFill(Color.TRANSPARENT);
+                alert.getDialogPane().setPrefSize(350, 220);
+
+                makeNodeDraggable(alert.getDialogPane());
+
+                /* Styling*/
+                DialogPane dialogPane = alert.getDialogPane();
+                dialogPane.getStylesheets().add(getClass().getResource("specificStyling/confirmationDialog.css").toExternalForm());
+                dialogPane.setStyle("-fx-background-color:" + gradientString);
+
+                alert.showAndWait();
+
+                if (alert.getResult() == ButtonType.YES)
+                {
+                    returnBoolean = true;
+                }
+
+                break;
+            }
+        }
+
+        return returnBoolean;
+    }
+
+    /** Handles navbar buttons **/
     public void authorizationButton_Action()
     {
         openAuthorization();
     }
-    public void attributesButton_Action()
+
+    public void getActivities_Action()
+    {
+        /* Brings anchorpane to front if not in front */
+        if(innerContentSP.getChildren().get(innerContentSP.getChildren().size() - 1) == activityLoaderAP)
+        {
+            activityLoaderAP.toBack();
+        }
+        else
+        {
+            activityLoaderAP.toFront();
+        }
+    }
+    public void chooseActivities_Action()
     {
 
     }
-    public void graphsButton_Action()
+    public void profileButton_Action()
+    {
+
+    }
+    public void dataButton_Action()
     {
 
     }
     public void logoButton_Action()
     {
-        activitiesHTTPRequest(currentAthlete.getAccess_Token());
+
     }
     public void settingsButton_Action()
     {
@@ -916,9 +1013,8 @@ public class mainController implements Initializable
     {
         if(tokenRefreshHTTPRequest(currentAthlete.getRefresh_Token()) && athleteInfoHTTPRequest(currentAthlete.getAccess_Token()))
         {
-            displayStatusBar("Athlete information refresh successful.", 3000, "success");
+            displayStatusBar("Athlete information refresh successful.", 3000, StatusType.SUCCESS);
         }
-        /* Refresh activities */
     }
     public void signOutButton_Action()
     {
@@ -927,18 +1023,49 @@ public class mainController implements Initializable
         if (athleteInformation.delete() && tokenData.delete())
         {
             currentAthlete = new Athlete();
-            displayStatusBar("Signed out athlete." , 3000, "alert");
+            displayStatusBar("Signed out athlete." , 3000, StatusType.ALERT);
         }
         else
         {
-            displayStatusBar("Sign out failed.", 3000, "error");
+            displayStatusBar("Sign out failed.", 3000, StatusType.ERROR);
         }
 
         updateLoggedInIcon(false);
     }
     public void backButton_Action()
     {
+        mainAP.toFront();
+    }
 
+    /** Handles activity loader buttons **/
+    public void aL_Load_Button()
+    {
+        try
+        {
+            LocalDateTime fromDate = aL_fromDatePicker.getValue().atStartOfDay();
+            LocalDateTime toDate = aL_toDatePicker.getValue().atTime(23,59,59);
+
+            long fromTimestamp = fromDate.toEpochSecond(ZoneOffset.UTC);
+            long toTimestamp = toDate.toEpochSecond(ZoneOffset.UTC);
+
+            if (toTimestamp <= fromTimestamp)
+            {
+                throw new RuntimeException("To date is less than from date, negative time.");
+            }
+            if (displayPrompt("Are you sure?", "Activities between " + fromDate.format(DateTimeFormatter.ISO_DATE) + " and " + toDate.format(DateTimeFormatter.ISO_DATE) + " will be retrieved.\n\nYou will not be able to make another request for the next 15 minutes.", PromptType.CONFIRMATION))
+            {
+                activityListHTTPRequest(currentAthlete.getAccess_Token(), fromTimestamp, toTimestamp);
+                displayStatusBar("Getting activities.", 3000, StatusType.ALERT);
+            }
+        }
+        catch (NullPointerException e)
+        {
+            displayStatusBar("No dates for request, try again.", 5000, StatusType.ERROR);
+        }
+        catch (RuntimeException e)
+        {
+            displayStatusBar("To-date cannot be before from-date, try again.", 5000, StatusType.ERROR);
+        }
     }
 
     /** Handles control bar buttons**/
@@ -951,7 +1078,7 @@ public class mainController implements Initializable
     {
         Rectangle2D screenSize = Screen.getPrimary().getVisualBounds();
 
-        if (!isMaximized)
+        if (!isMaximized) //Maximizes
         {
             previousWindowWidth = main.window.getWidth();
             previousWindowHeight = main.window.getHeight();
@@ -966,7 +1093,7 @@ public class mainController implements Initializable
 
             isMaximized = true;
         }
-        else
+        else //Restores
         {
             main.window.setWidth(previousWindowWidth);
             main.window.setHeight(previousWindowHeight);
@@ -984,6 +1111,7 @@ public class mainController implements Initializable
             isMaximized = false;
         }
 
+        firstResize = false;
         main.userPreferences.setFullscreen(isMaximized);
     }
 
@@ -993,7 +1121,7 @@ public class mainController implements Initializable
     }
 
     /* Run on initialization */
-    public void makeScreenDraggable(HBox topNode)
+    public void makeScreenDraggable(Node topNode)
     {
         topNode.setOnMousePressed((event) ->
         {
@@ -1050,6 +1178,32 @@ public class mainController implements Initializable
             }
 
             resizingActive = false;
+        });
+    }
+
+    public void makeNodeDraggable (Node node)
+    {
+        node.setOnMousePressed((event) ->
+        {
+            xOffset = event.getSceneX();
+            yOffset = event.getSceneY();
+
+            node.getScene().getWindow().setOpacity(0.8);
+        });
+        node.setOnMouseDragged((event) ->
+        {
+            node.getScene().getWindow().setX(event.getScreenX() - xOffset);
+            node.getScene().getWindow().setY(event.getScreenY() - yOffset);
+
+            node.getScene().getWindow().setOpacity(0.8);
+        });
+        node.setOnDragDone((event) ->
+        {
+            node.getScene().getWindow().setOpacity(1.0);
+        });
+        node.setOnMouseReleased((event) ->
+        {
+            node.getScene().getWindow().setOpacity(1.0);
         });
     }
 }

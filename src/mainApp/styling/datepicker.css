@@ -1,0 +1,130 @@
+/* Colors */
+*{
+    -fx-buttoncolor: rgba(40, 40, 40, 0.50);
+    -fx-buttonhovercolor: rgba(24, 24, 24, 0.47);
+    -fx-text: #e5e5e5;
+    -fx-darktext: #8e8e8e;
+    -fx-popupbg: #282828;
+    -fx-popupbglight: #6d6d6d;
+    -fx-popupbgdark: #1c1c1c;
+}
+
+/* Date picker */
+.date-picker
+{
+    -fx-background-color: -fx-buttoncolor;
+    -fx-background-radius: 5px;
+}
+.date-picker .text-field
+{
+    -fx-background-color: transparent;
+    -fx-background-radius: 5 0 0 5;
+    -fx-cursor: default;
+    -fx-font-weight: bold;
+    -fx-font-family: "Roboto";
+    -fx-text-fill: -fx-text;
+    -fx-font-style: italic;
+    -fx-font-size: 12px;
+}
+.date-picker > .arrow-button
+{
+    -fx-background-color: transparent;
+    -fx-background-radius: 0 5 5 0;
+}
+.date-picker > .arrow-button:hover
+{
+    -fx-background-color: -fx-buttonhovercolor;
+}
+.date-picker > .arrow-button > .arrow
+{
+    -fx-shape: "M0 464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V192H0v272zm320-196c0-6.6 5.4-12 12-12h40c6.6 0 12 5.4 12 12v40c0 6.6-5.4 12-12 12h-40c-6.6 0-12-5.4-12-12v-40zm0 128c0-6.6 5.4-12 12-12h40c6.6 0 12 5.4 12 12v40c0 6.6-5.4 12-12 12h-40c-6.6 0-12-5.4-12-12v-40zM192 268c0-6.6 5.4-12 12-12h40c6.6 0 12 5.4 12 12v40c0 6.6-5.4 12-12 12h-40c-6.6 0-12-5.4-12-12v-40zm0 128c0-6.6 5.4-12 12-12h40c6.6 0 12 5.4 12 12v40c0 6.6-5.4 12-12 12h-40c-6.6 0-12-5.4-12-12v-40zM64 268c0-6.6 5.4-12 12-12h40c6.6 0 12 5.4 12 12v40c0 6.6-5.4 12-12 12H76c-6.6 0-12-5.4-12-12v-40zm0 128c0-6.6 5.4-12 12-12h40c6.6 0 12 5.4 12 12v40c0 6.6-5.4 12-12 12H76c-6.6 0-12-5.4-12-12v-40zM400 64h-48V16c0-8.8-7.2-16-16-16h-32c-8.8 0-16 7.2-16 16v48H160V16c0-8.8-7.2-16-16-16h-32c-8.8 0-16 7.2-16 16v48H48C21.5 64 0 85.5 0 112v48h448v-48c0-26.5-21.5-48-48-48z";
+    -fx-background-color: -fx-text;
+    -fx-padding: 8 7 8 7;
+}
+.date-picker-popup
+{
+    -fx-background-color: transparent;
+    -fx-font-weight: bold;
+    -fx-font-family: "Roboto";
+}
+.date-picker-popup > .month-year-pane
+{
+    -fx-background-color: -fx-popupbg;
+    -fx-text-fill: -fx-text;
+    -fx-background-radius: 5 5 0 0;
+}
+.date-picker-popup > .calendar-grid
+{
+    -fx-background-color: -fx-popupbg;
+    -fx-padding: 0 4 4 0;
+    -fx-background-radius: 0 0 5 5;
+
+}
+.date-picker-popup > * > .date-cell
+{
+    -fx-background-color: transparent;
+    -fx-text-fill: -fx-text;
+
+}
+.date-picker-popup > * > .week-number-cell
+{
+    -fx-background-color: transparent;
+    -fx-border-width: 0px;
+    -fx-text-fill: -fx-text;
+}
+.date-picker-popup > * > .day-cell
+{
+    -fx-background-color: -fx-popupbgdark;
+    -fx-border-width: 0px;
+    -fx-text-fill: -fx-text;
+    -fx-padding: 10;
+    -fx-background-radius: 3;
+}
+.date-picker-popup > * > .day-cell:hover, .date-picker-popup > * > .selected
+{
+    -fx-text-fill: -fx-darktext;
+    -fx-background-color: -fx-popupbglight;
+}
+.date-picker-popup > * > .today
+{
+    -fx-background-color: -fx-popupbg;
+}
+.date-picker-popup > * > .spinner > .label
+{
+    -fx-text-fill: -fx-text;
+}
+.date-picker-popup > * > .previous-month,
+.date-picker-popup > * > .next-month
+{
+    -fx-background-color: derive(-fx-popupbgdark, -25%);
+}
+.date-picker-popup > * > .spinner > .button
+{
+    -fx-background-insets: 0;
+    -fx-background-radius: 2;
+}
+.date-picker-popup > * > .spinner > .button:hover
+{
+    -fx-background-color: -fx-popupbgdark;
+
+}
+.date-picker-popup > * > .spinner > .button > .left-arrow,
+.date-picker-popup > * > .spinner > .button > .right-arrow
+{
+    -fx-padding: 4 3 4 2;
+    -fx-background-insets: 0 0 2 0;
+}
+.date-picker-popup > * > .spinner > .right-button
+{
+    -fx-padding: 2 5 2 6;
+}
+.date-picker-popup > * > .spinner > .left-button
+{
+    -fx-padding: 2 6 2 5;
+}
+.date-picker-popup > * > .spinner > .button:focused
+{
+    -fx-background-color: -fx-popupbgdark;
+}
+
+

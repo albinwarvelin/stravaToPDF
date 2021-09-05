@@ -45,7 +45,6 @@ public class main extends Application {
             main.window.setHeight(screenSize.getHeight());
 
             main.window.centerOnScreen();
-
         }
     }
 

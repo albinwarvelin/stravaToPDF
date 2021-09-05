@@ -6,6 +6,7 @@
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.effect.DropShadow?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
@@ -22,9 +23,9 @@
    <left>
       <VBox fx:id="navBarBG" prefWidth="300.0" styleClass="navBarBG" BorderPane.alignment="CENTER">
          <children>
-            <VBox prefHeight="493.0" prefWidth="300.0" VBox.vgrow="ALWAYS">
+            <VBox prefHeight="400.0" prefWidth="300.0" VBox.vgrow="ALWAYS">
                <children>
-                  <StackPane fx:id="authorizationSP" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="65.0" prefWidth="300.0">
+                  <StackPane fx:id="authorizationSP" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="45.0" prefWidth="300.0">
                      <VBox.margin>
                         <Insets bottom="10.0" left="15.0" right="15.0" top="20.0" />
                      </VBox.margin>
@@ -43,10 +44,9 @@
                         </Pane>
                         <AnchorPane fx:id="stravaConnectedAP" styleClass="stravaConnectedAP">
                            <children>
-                              <Pane layoutX="14.0" layoutY="21.0" prefHeight="24.0" prefWidth="18.0" styleClass="stravaConnectedIcon" />
-                              <Label fx:id="activitiesLoadedLabel" layoutX="56.0" layoutY="12.0" styleClass="stravaConnectedLabel" text="Activities loaded:" />
-                              <Separator layoutX="45.0" layoutY="16.0" maxWidth="-Infinity" orientation="VERTICAL" prefHeight="34.0" prefWidth="0.0" />
-                              <Label fx:id="activitiesDateLabel" layoutX="56.0" layoutY="31.0" styleClass="stravaConnectedLabel" text="Until:" />
+                              <Pane layoutX="14.0" layoutY="11.0" prefHeight="24.0" prefWidth="18.0" styleClass="stravaConnectedIcon" />
+                              <Label fx:id="connectedLabel" layoutX="59.0" layoutY="12.0" styleClass="stravaConnectedLabel" text="Strava Connected" />
+                              <Separator layoutX="45.0" layoutY="6.0" maxWidth="-Infinity" orientation="VERTICAL" prefHeight="34.0" prefWidth="0.0" />
                            </children>
                         </AnchorPane>
                      </children>
@@ -65,21 +65,42 @@
                      <children>
                         <Label layoutX="-1.0" layoutY="11.0" prefHeight="23.0" styleClass="navBarDatePickerLabel" text="Start" />
                         <Label layoutY="66.0" prefHeight="23.0" styleClass="navBarDatePickerLabel" text="Stop" />
-                        <DatePicker layoutX="50.0" pickOnBounds="false" prefHeight="45.0" prefWidth="220.0" styleClass="navBarDatePicker" />
-                        <DatePicker layoutX="50.0" layoutY="55.0" pickOnBounds="false" prefHeight="45.0" prefWidth="220.0" styleClass="navBarDatePicker" />
+                        <DatePicker fx:id="toDatePicker" layoutX="50.0" pickOnBounds="false" prefHeight="45.0" prefWidth="220.0" stylesheets="@../styling/datepicker.css" />
+                        <DatePicker fx:id="fromDatePicker" layoutX="50.0" layoutY="55.0" pickOnBounds="false" prefHeight="45.0" prefWidth="220.0" stylesheets="@../styling/datepicker.css" />
                      </children>
                      <VBox.margin>
-                        <Insets bottom="20.0" left="15.0" right="15.0" top="10.0" />
+                        <Insets bottom="10.0" left="15.0" right="15.0" top="10.0" />
                      </VBox.margin>
                   </AnchorPane>
-                  <Button fx:id="attributesButton" alignment="CENTER" mnemonicParsing="false" onAction="#attributesButton_Action" prefHeight="45.0" prefWidth="300.0" styleClass="navBarButtons">
+                  <Button fx:id="chooseActivitiesButton" alignment="CENTER" mnemonicParsing="false" onAction="#chooseActivities_Action" prefHeight="45.0" prefWidth="300.0" styleClass="navBarButtons">
+                     <graphic>
+                        <HBox alignment="CENTER_LEFT">
+                           <children>
+                              <Pane maxHeight="24.0" maxWidth="31.0" minHeight="24.0" minWidth="24.0" styleClass="chooseActivityPane">
+                                 <HBox.margin>
+                                    <Insets left="3.0" right="17.0" />
+                                 </HBox.margin>
+                              </Pane>
+                              <Label styleClass="navBarButtonText" text="Choose activities">
+                                 <HBox.margin>
+                                    <Insets right="10.0" />
+                                 </HBox.margin>
+                              </Label>
+                           </children>
+                        </HBox>
+                     </graphic>
+                     <VBox.margin>
+                        <Insets bottom="5.0" left="15.0" right="15.0" />
+                     </VBox.margin>
+                  </Button>
+                  <Button fx:id="profileButton" alignment="CENTER" mnemonicParsing="false" onAction="#profileButton_Action" prefHeight="45.0" prefWidth="300.0" styleClass="navBarButtons">
                      <VBox.margin>
                         <Insets bottom="5.0" left="15.0" right="15.0" top="5.0" />
                      </VBox.margin>
                      <graphic>
                         <HBox alignment="CENTER_LEFT">
                            <children>
-                              <Pane maxHeight="24.0" maxWidth="32.0" minHeight="24.0" minWidth="31.0" styleClass="profilePane">
+                              <Pane maxHeight="24.0" maxWidth="31.0" minHeight="24.0" minWidth="31.0" styleClass="profilePane">
                                  <HBox.margin>
                                     <Insets right="14.0" />
                                  </HBox.margin>
@@ -93,52 +114,80 @@
                         </HBox>
                      </graphic>
                   </Button>
-                  <Button fx:id="graphsButton" alignment="CENTER" mnemonicParsing="false" onAction="#graphsButton_Action" prefHeight="45.0" prefWidth="300.0" styleClass="navBarButtons">
+                  <HBox>
                      <VBox.margin>
                         <Insets bottom="5.0" left="15.0" right="15.0" top="5.0" />
                      </VBox.margin>
+                     <children>
+                        <Button fx:id="dataButton" alignment="CENTER" mnemonicParsing="false" onAction="#dataButton_Action" prefHeight="45.0" prefWidth="130.0" styleClass="navBarButtons">
+                           <graphic>
+                              <HBox alignment="CENTER_LEFT">
+                                 <children>
+                                    <Pane maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" pickOnBounds="false" styleClass="dataPane">
+                                       <HBox.margin>
+                                          <Insets left="3.0" right="18.0" />
+                                       </HBox.margin>
+                                    </Pane>
+                                    <Label styleClass="navBarButtonText" text="Data">
+                                       <HBox.margin>
+                                          <Insets />
+                                       </HBox.margin>
+                                    </Label>
+                                 </children>
+                              </HBox>
+                           </graphic>
+                           <HBox.margin>
+                              <Insets right="5.0" />
+                           </HBox.margin>
+                        </Button>
+                        <Button fx:id="logoButton" alignment="CENTER" mnemonicParsing="false" onAction="#logoButton_Action" prefHeight="45.0" prefWidth="130.0" styleClass="navBarButtons">
+                           <graphic>
+                              <HBox alignment="CENTER_LEFT">
+                                 <children>
+                                    <Pane maxHeight="24.0" maxWidth="30.0" minHeight="24.0" minWidth="30.0" styleClass="logoPane">
+                                       <HBox.margin>
+                                          <Insets right="15.0" />
+                                       </HBox.margin>
+                                    </Pane>
+                                    <Label styleClass="navBarButtonText" text="Logo">
+                                       <HBox.margin>
+                                          <Insets />
+                                       </HBox.margin>
+                                    </Label>
+                                 </children>
+                              </HBox>
+                           </graphic>
+                           <HBox.margin>
+                              <Insets left="5.0" />
+                           </HBox.margin>
+                        </Button>
+                     </children>
+                  </HBox>
+               </children>
+            </VBox>
+            <VBox prefHeight="225.0" prefWidth="300.0">
+               <children>
+                  <Button fx:id="getActivitiesButton" alignment="CENTER" mnemonicParsing="false" onAction="#getActivities_Action" prefHeight="45.0" prefWidth="300.0" styleClass="navBarButtons">
                      <graphic>
                         <HBox alignment="CENTER_LEFT">
                            <children>
-                              <Pane maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" pickOnBounds="false" styleClass="dataPane">
-                                 <HBox.margin>
-                                    <Insets left="3.0" right="18.0" />
-                                 </HBox.margin>
-                              </Pane>
-                              <Label styleClass="navBarButtonText" text="Data">
-                                 <HBox.margin>
-                                    <Insets />
-                                 </HBox.margin>
-                              </Label>
-                           </children>
-                        </HBox>
-                     </graphic>
-                  </Button>
-                  <Button fx:id="logoButton" alignment="CENTER" mnemonicParsing="false" onAction="#logoButton_Action" prefHeight="45.0" prefWidth="300.0" styleClass="navBarButtons">
-                     <VBox.margin>
-                        <Insets bottom="5.0" left="15.0" right="15.0" top="5.0" />
-                     </VBox.margin>
-                     <graphic>
-                        <HBox alignment="CENTER_LEFT">
-                           <children>
-                              <Pane maxHeight="24.0" maxWidth="30.0" minHeight="24.0" minWidth="30.0" styleClass="logoPane">
+                              <Pane maxHeight="22.0" maxWidth="30.0" minHeight="22.0" minWidth="30.0" styleClass="getActivityPane">
                                  <HBox.margin>
                                     <Insets right="15.0" />
                                  </HBox.margin>
                               </Pane>
-                              <Label styleClass="navBarButtonText" text="Logo">
+                              <Label styleClass="navBarButtonText" text="Load Strava activities">
                                  <HBox.margin>
-                                    <Insets />
+                                    <Insets right="10.0" />
                                  </HBox.margin>
                               </Label>
                            </children>
                         </HBox>
                      </graphic>
+                     <VBox.margin>
+                        <Insets bottom="5.0" left="15.0" right="15.0" />
+                     </VBox.margin>
                   </Button>
-               </children>
-            </VBox>
-            <VBox prefHeight="175.0" prefWidth="300.0">
-               <children>
                   <Button fx:id="refreshButton" mnemonicParsing="false" onAction="#refreshButton_Action" prefHeight="45.0" prefWidth="300.0" styleClass="navBarButtons">
                      <graphic>
                         <HBox alignment="CENTER_LEFT">
@@ -147,7 +196,7 @@
                                  <HBox.margin>
                                     <Insets left="3.0" right="18.0" />
                                  </HBox.margin></Pane>
-                              <Label styleClass="navBarButtonText" text="Refresh">
+                              <Label styleClass="navBarButtonText" text="Refresh profile">
                                  <HBox.margin>
                                     <Insets />
                                  </HBox.margin>
@@ -196,7 +245,7 @@
                         </HBox>
                      </graphic>
                      <VBox.margin>
-                        <Insets bottom="5.0" left="15.0" right="15.0" top="5.0" />
+                        <Insets bottom="15.0" left="15.0" right="15.0" top="5.0" />
                      </VBox.margin>
                   </Button>
                </children>
@@ -205,7 +254,7 @@
       </VBox>
    </left>
    <center>
-      <StackPane fx:id="contentSP" BorderPane.alignment="CENTER">
+      <StackPane fx:id="outerContentSP" BorderPane.alignment="CENTER">
          <children>
             <WebView fx:id="authorizationWV" prefHeight="200.0" prefWidth="200.0" />
             <BorderPane fx:id="mainBG" prefHeight="200.0" prefWidth="200.0" styleClass="mainBG">
@@ -215,9 +264,9 @@
                         <Pane fx:id="statusBarPane" maxHeight="45.0" styleClass="statusBarPane">
                            <children>
                               <Pane fx:id="statusIconPane" layoutX="11.0" layoutY="10.0" prefHeight="24.0" prefWidth="21.0" styleClass="statusBarIcon" />
-                              <Label fx:id="statusBarLabel" layoutX="39.0" layoutY="13.0" minHeight="0.0" minWidth="0.0" styleClass="statusBarLabel" text="200 Activities loaded">
+                              <Label fx:id="statusBarLabel" layoutX="39.0" layoutY="13.0" minHeight="0.0" minWidth="0.0" styleClass="statusBarLabel" text="30 Activities loaded">
                                  <padding>
-                                    <Insets left="5.0" right="5.0" />
+                                    <Insets left="5.0" right="15.0" />
                                  </padding>
                               </Label>
                            </children>
@@ -237,6 +286,24 @@
                      </children>
                   </HBox>
                </bottom>
+               <center>
+                  <StackPane fx:id="innerContentSP" prefHeight="150.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+                     <children>
+                        <AnchorPane fx:id="mainAP" prefHeight="200.0" prefWidth="200.0" styleClass="mainBG" />
+                        <AnchorPane fx:id="activityLoaderAP" prefHeight="200.0" prefWidth="200.0" styleClass="mainBG">
+                           <children>
+                              <DatePicker fx:id="aL_toDatePicker" layoutX="100.0" layoutY="185.0" prefHeight="50.0" prefWidth="210.0" stylesheets="@../styling/datepicker.css" />
+                              <DatePicker fx:id="aL_fromDatePicker" layoutX="100.0" layoutY="120.0" prefHeight="50.0" prefWidth="210.0" stylesheets="@../styling/datepicker.css" />
+                              <Label layoutX="60.0" layoutY="83.0" prefHeight="29.0" prefWidth="250.0" styleClass="alHeader" text="Load Strava Activities" />
+                              <Button fx:id="aL_LoadActivitiesButton" layoutX="60.0" layoutY="250.0" mnemonicParsing="false" onAction="#aL_Load_Button" prefHeight="35.0" prefWidth="250.0" styleClass="alButton" text="Load Activities" />
+                              <Label layoutX="60.0" layoutY="202.0" styleClass="alContentText" text="To" />
+                              <Label layoutX="60.0" layoutY="137.0" styleClass="alContentText" text="From" />
+                              <TextArea accessibleRole="NODE" disable="true" editable="false" layoutX="52.0" layoutY="303.0" prefHeight="308.0" prefWidth="372.0" styleClass="alContentText" text="How to:&#10;Specify range of strava retrieval by picking two dates. App will then try to retrieve all activities within range and save activities for later use. To get more than 30 days in your training log do mulitple requests.&#10;&#10;Notice!&#10;As Strava has a maximum limit of activities retrieved per day, requests are limited to once every 15 minutes with a maximum of 30 days in each request. On rare occations&#10;the maximum limit can be hit as multiple users are requesting in the same interval, in that case wait 15 minutes and try again." wrapText="true" />
+                           </children>
+                        </AnchorPane>
+                     </children>
+                  </StackPane>
+               </center>
             </BorderPane>
          </children>
       </StackPane>

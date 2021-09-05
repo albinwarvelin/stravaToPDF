@@ -3,8 +3,10 @@
     -fx-buttoncolor: rgba(40, 40, 40, 0.50);
     -fx-buttonhovercolor: rgba(24, 24, 24, 0.47);
     -fx-navbartext: #e5e5e5;
-    -fx-popupcolor: #e5e5e5;
-    -fx-popuptext: #282828;
+    -fx-statuspopupcolor: #e5e5e5;
+    -fx-statuspopuptext: #282828;
+    -fx-popupbg: rgba(40, 40, 40, 0.82);
+    -fx-pagetext: #c1c1c1;
 }
 
 /* Backgrounds */
@@ -58,26 +60,6 @@
     -fx-font-family: "Roboto";
     -fx-text-fill: -fx-navbartext;
 }
-.navBarDatePicker
-{
-    -fx-background-color: -fx-buttoncolor;
-    -fx-background-radius: 5px;
-}
-.navBarDatePicker .text-field
-{
-    -fx-background-color: transparent;
-    -fx-background-radius: 5 0 0 5;
-    -fx-cursor: default;
-}
-.navBarDatePicker > .arrow-button
-{
-    -fx-background-color: transparent;
-    -fx-background-radius: 0 5 5 0;
-}
-.navBarDatePicker > .arrow-button:hover
-{
-    -fx-background-color: -fx-buttonhovercolor;
-}
 .navBarButtons
 {
     -fx-background-radius: 5px;
@@ -128,11 +110,21 @@
     -fx-background-color: -fx-navbartext;
     -fx-shape: "M464 448H48c-26.51 0-48-21.49-48-48V112c0-26.51 21.49-48 48-48h416c26.51 0 48 21.49 48 48v288c0 26.51-21.49 48-48 48zM112 120c-30.928 0-56 25.072-56 56s25.072 56 56 56 56-25.072 56-56-25.072-56-56-56zM64 384h384V272l-87.515-87.515c-4.686-4.686-12.284-4.686-16.971 0L208 320l-55.515-55.515c-4.686-4.686-12.284-4.686-16.971 0L64 336v48z";
 }
+.chooseActivityPane
+{
+    -fx-background-color: -fx-navbartext;
+    -fx-shape: "M190.5 66.9l22.2-22.2c9.4-9.4 24.6-9.4 33.9 0L441 239c9.4 9.4 9.4 24.6 0 33.9L246.6 467.3c-9.4 9.4-24.6 9.4-33.9 0l-22.2-22.2c-9.5-9.5-9.3-25 .4-34.3L311.4 296H24c-13.3 0-24-10.7-24-24v-32c0-13.3 10.7-24 24-24h287.4L190.9 101.2c-9.8-9.3-10-24.8-.4-34.3z";
+}
+.getActivityPane
+{
+    -fx-background-color: -fx-navbartext;
+    -fx-shape: "M537.6 226.6c4.1-10.7 6.4-22.4 6.4-34.6 0-53-43-96-96-96-19.7 0-38.1 6-53.3 16.2C367 64.2 315.3 32 256 32c-88.4 0-160 71.6-160 160 0 2.7.1 5.4.2 8.1C40.2 219.8 0 273.2 0 336c0 79.5 64.5 144 144 144h368c70.7 0 128-57.3 128-128 0-61.9-44-113.6-102.4-125.4zm-132.9 88.7L299.3 420.7c-6.2 6.2-16.4 6.2-22.6 0L171.3 315.3c-10.1-10.1-2.9-27.3 11.3-27.3H248V176c0-8.8 7.2-16 16-16h48c8.8 0 16 7.2 16 16v112h65.4c14.2 0 21.4 17.2 11.3 27.3z";
+}
 
 /* Status bar */
 .statusBarPane
 {
-    -fx-background-color: -fx-popupcolor;
+    -fx-background-color: -fx-statuspopupcolor;
     -fx-background-radius: 5;
 }
 .statusBarLabel
@@ -141,7 +133,7 @@
     -fx-font-weight: bold;
     -fx-font-style: italic;
     -fx-font-family: "Roboto";
-    -fx-text-fill: -fx-popuptext;
+    -fx-text-fill: -fx-statuspopuptext;
 }
 .statusBarIcon
 {
@@ -207,4 +199,52 @@
 {
     -fx-background-radius: 5px;
     -fx-background-color: -fx-buttoncolor;
+}
+
+/* Strava activity loader page */
+.alHeader
+{
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-font-style: italic;
+    -fx-font-family: "Roboto";
+    -fx-text-fill: -fx-pagetext;
+}
+.alContentText
+{
+    -fx-background-color: transparent;
+    -fx-text-fill: -fx-pagetext;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-font-style: italic;
+    -fx-font-family: "Roboto";
+}
+.alContentText .scroll-pane
+{
+    -fx-background-color: transparent;
+}
+.alContentText .scroll-pane .viewport
+{
+    -fx-background-color: transparent;
+}
+.alContentText .scroll-pane .content
+{
+    -fx-background-color: transparent;
+}
+.alContentText:disabled
+{
+    -fx-opacity: 1.0;
+}
+.alButton
+{
+    -fx-background-color: #cc4200;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-font-style: italic;
+    -fx-font-family: "Roboto";
+    -fx-text-fill: -fx-pagetext;
+}
+.alButton:hover
+{
+    -fx-opacity: 0.8;
 }

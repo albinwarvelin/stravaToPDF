@@ -45,6 +45,9 @@ public class Athlete
     private HashMap<String, Shoe> shoesHashMap = new HashMap<>();
     private HashMap<String, Bike> bikesHashMap = new HashMap<>();
 
+    /** Athlete activities **/
+    private HashMap<Integer, Activity> activities = new HashMap<>();
+
     /* Updates token and athlete with JSON-Java */
     public void tokenUpdate(String jsonString)
     {
@@ -137,6 +140,25 @@ public class Athlete
         expires_In = tokenJSONObject.getInt("expires_in");
         expires_At = tokenJSONObject.getLong("expires_at");
         token_Type = tokenJSONObject.getString("token_type");
+    }
+
+    /* Updates activities */
+    public void activitiesUpdate(String jsonString)
+    {
+        JSONArray activitiesJSONArray = new JSONArray(jsonString);
+
+        for (int i = 0; i < activitiesJSONArray.length(); i++)
+        {
+            Activity tempActivity = new Activity(activitiesJSONArray.getJSONObject(i));
+
+            //activities.put(tempActivity.getId(), tempActivity);
+        }
+    }
+
+    /* Clears all activities */
+    public void clearActivities()
+    {
+
     }
 
     public void saveTokenDataToFile()
@@ -290,7 +312,7 @@ public class Athlete
         return dataAvailable;
     }
 
-    /* Puts token data in JSONObject */
+    /* Puts token data in JSONObject, used in saving */
     private JSONObject tokenDataToJSONObject()
     {
         JSONObject data = new JSONObject();
@@ -304,7 +326,7 @@ public class Athlete
         return data;
     }
 
-    /* Puts all data in JSONObject */
+    /* Puts all data in JSONObject, used in saving */
     private JSONObject athleteDataToJSONObject()
     {
         JSONObject data = new JSONObject();

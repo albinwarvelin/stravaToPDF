@@ -1,0 +1,59 @@
+/* Colors */
+*{
+    -fx-buttoncolor: rgba(40, 40, 40, 0.50);
+    -fx-buttonhovercolor: rgba(24, 24, 24, 0.47);
+    -fx-text: #e5e5e5;
+    -fx-darktext: #8e8e8e;
+    -fx-popupbg: #282828;
+    -fx-popupbglight: #808080;
+    -fx-popupbgdark: #1c1c1c;
+}
+
+.dialog-pane
+{
+    -fx-background-radius: 6px;
+
+    -fx-border-color: -fx-popupbgdark;
+    -fx-border-radius: 4px;
+    -fx-border-width: 4px;
+}
+.dialog-pane .header-panel
+{
+    -fx-background-color: transparent;
+    -fx-background-radius: 6px;
+}
+.dialog-pane .header-panel .label
+{
+    -fx-text-fill: -fx-text;
+    -fx-font-family: "Roboto";
+    -fx-font-weight: bold;
+    -fx-font-style: italic;
+    -fx-font-size: 18px;
+}
+.dialog-pane > .content.label
+{
+    -fx-text-fill: -fx-text;
+    -fx-font-family: "Roboto";
+    -fx-font-weight: bold;
+    -fx-font-style: italic;
+    -fx-font-size: 12px;
+}
+.dialog-pane .button
+{
+    -fx-background-radius: 3px;
+    -fx-background-color: -fx-buttoncolor;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-font-style: italic;
+    -fx-font-family: "Roboto";
+    -fx-text-fill: -fx-text;
+}
+.dialog-pane .button:hover
+{
+    -fx-background-color: -fx-buttonhovercolor;
+}
+.alert.confirmation.dialog-pane
+{
+    -fx-graphic: url("exclamation-circle.png");
+}
+
