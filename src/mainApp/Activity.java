@@ -37,6 +37,6 @@ public class Activity
 
     public Activity(JSONObject jsonObject)
     {
-
+        //Add Parsing here
     }
 }

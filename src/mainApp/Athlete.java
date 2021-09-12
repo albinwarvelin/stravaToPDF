@@ -46,7 +46,7 @@ public class Athlete
     private HashMap<String, Bike> bikesHashMap = new HashMap<>();
 
     /** Athlete activities **/
-    private HashMap<Integer, Activity> activities = new HashMap<>();
+    private HashMap<Long, Activity> activities = new HashMap<>();
 
     /* Updates token and athlete with JSON-Java */
     public void tokenUpdate(String jsonString)
@@ -143,22 +143,9 @@ public class Athlete
     }
 
     /* Updates activities */
-    public void activitiesUpdate(String jsonString)
+    public void activitiesUpdate(String jsonString, long id)
     {
-        JSONArray activitiesJSONArray = new JSONArray(jsonString);
-
-        for (int i = 0; i < activitiesJSONArray.length(); i++)
-        {
-            Activity tempActivity = new Activity(activitiesJSONArray.getJSONObject(i));
-
-            //activities.put(tempActivity.getId(), tempActivity);
-        }
-    }
-
-    /* Clears all activities */
-    public void clearActivities()
-    {
-
+        activities.put(id, new Activity(new JSONObject(jsonString)));
     }
 
     public void saveTokenDataToFile()
@@ -416,6 +403,12 @@ public class Athlete
         return data;
     }
 
+    public boolean checkContainsId(Long id)
+    {
+        ArrayList<Long> idList = new ArrayList<>(activities.keySet());
+
+        return idList.contains(id);
+    }
 
     /** App resources get and set methods **/
     public String getToken_Type()
@@ -461,6 +454,10 @@ public class Athlete
     }
 
     /** Athlete information get and set methods**/
+    public Activity getActivity(int id)
+    {
+        return activities.get(id);
+    }
     public boolean getLoggedIn()
     {
         return isLoggedIn;

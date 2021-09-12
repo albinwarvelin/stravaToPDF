@@ -16,7 +16,6 @@ import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import mainApp.*;
 import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -24,7 +23,6 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -85,6 +83,7 @@ public class mainController implements Initializable
 
     /** Prompt **/
     public enum PromptType {CONFIRMATION}
+    public enum Rotation {CW, CCW}
 
     /** NavBar background animation **/
     private long elapsedHundredths; //100 fps
@@ -92,7 +91,7 @@ public class mainController implements Initializable
     private double speed = 0.050;
     private final double maxSpeed = 0.100;
     private final double minSpeed = 0.010;
-    private String rotation = "cw";
+    private Rotation rotation = Rotation.CCW;
 
     private int hue = 223;
     private final int maxHue = 300;
@@ -420,11 +419,11 @@ public class mainController implements Initializable
                         currentAthlete.refreshTokenUpdate(response);
                         successfulRequest = true;
                     }
-                    case 401 -> displayStatusBar("Token error: 401, Unauthorized.", 5000, StatusType.ERROR);
-                    case 403 -> displayStatusBar("Token error: 403, Forbidden, you cannot access.", 5000, StatusType.ERROR);
-                    case 404 -> displayStatusBar("Token error: 404, Not found.", 5000, StatusType.ERROR);
-                    case 429 -> displayStatusBar("Token error: 429, Too many requests. Try again later.", 5000, StatusType.ERROR);
-                    case 500 -> displayStatusBar("Token error: 500, Strava is having issues.", 5000, StatusType.ERROR);
+                    case 401 -> displayStatusBar("Token refresh error: 401, Unauthorized.", 5000, StatusType.ERROR);
+                    case 403 -> displayStatusBar("Token refresh error: 403, Forbidden, you cannot access.", 5000, StatusType.ERROR);
+                    case 404 -> displayStatusBar("Token refresh error: 404, Not found.", 5000, StatusType.ERROR);
+                    case 429 -> displayStatusBar("Token refresh error: 429, Too many requests. Try again later.", 5000, StatusType.ERROR);
+                    case 500 -> displayStatusBar("Token refresh error: 500, Strava is having issues.", 5000, StatusType.ERROR);
                 }
                 http.disconnect();
             }
@@ -476,11 +475,11 @@ public class mainController implements Initializable
                         currentAthlete.athleteUpdate(response);
                         successfulRequest = true;
                     }
-                    case 401 -> displayStatusBar("Token error: 401, Unauthorized.", 5000, StatusType.ERROR);
-                    case 403 -> displayStatusBar("Token error: 403, Forbidden, you cannot access.", 5000, StatusType.ERROR);
-                    case 404 -> displayStatusBar("Token error: 404, Not found.", 5000, StatusType.ERROR);
-                    case 429 -> displayStatusBar("Token error: 429, Too many requests. Try again later.", 5000, StatusType.ERROR);
-                    case 500 -> displayStatusBar("Token error: 500, Strava is having issues.", 5000, StatusType.ERROR);
+                    case 401 -> displayStatusBar("Athlete information error: 401, Unauthorized.", 5000, StatusType.ERROR);
+                    case 403 -> displayStatusBar("Athlete information error: 403, Forbidden, you cannot access.", 5000, StatusType.ERROR);
+                    case 404 -> displayStatusBar("Athlete information error: 404, Not found.", 5000, StatusType.ERROR);
+                    case 429 -> displayStatusBar("Athlete information error: 429, Too many requests. Try again later.", 5000, StatusType.ERROR);
+                    case 500 -> displayStatusBar("Athlete information error: 500, Strava is having issues.", 5000, StatusType.ERROR);
                 }
                 http.disconnect();
             }
@@ -529,21 +528,38 @@ public class mainController implements Initializable
                         }
                         while ((responseReader.readLine()) != null);
 
-                        JSONArray activityList = new JSONArray(response);
-                        ArrayList<Integer> idList = new ArrayList<>();
+                        JSONArray jsonActivityList = new JSONArray(response);
+                        ArrayList<Long> idQueue = new ArrayList<>();
 
-                        for (int i = 0; i < activityList.length(); i++)
+
+                        for (int i = 0; i < jsonActivityList.length(); i++)
                         {
-                            idList.add(activityList.getJSONObject(i).getInt("id"));
+                            if (!currentAthlete.checkContainsId(jsonActivityList.getJSONObject(i).getLong("id")))   //Add if not already in list
+                            {
+                                idQueue.add(jsonActivityList.getJSONObject(i).getLong("id"));
+                            }
                         }
 
-                        successfulRequest = true;
+                        for (int i = 0; i < idQueue.size(); i++) //Loops and requests all activities in queue
+                        {
+                            if(!singleActivityHTTPRequest(idQueue.get(i), currentAthlete.getAccess_Token())) //Breaks loop if any error occurs, to not overwrite data
+                            {
+                                successfulRequest = false;
+                                break;
+                            }
+
+                            /** Add to javafx list here **/
+
+                            displayStatusBar((i + 1)  + " of " + idQueue.size() + " activities retrieved", 3000, StatusType.ALERT);
+
+                            successfulRequest = true;
+                        }
                     }
-                    case 401 -> displayStatusBar("Token error: 401, Unauthorized.", 5000, StatusType.ERROR);
-                    case 403 -> displayStatusBar("Token error: 403, Forbidden, you cannot access.", 5000, StatusType.ERROR);
-                    case 404 -> displayStatusBar("Token error: 404, Not found.", 5000, StatusType.ERROR);
-                    case 429 -> displayStatusBar("Token error: 429, Too many requests. Try again later.", 5000, StatusType.ERROR);
-                    case 500 -> displayStatusBar("Token error: 500, Strava is having issues.", 5000, StatusType.ERROR);
+                    case 401 -> displayStatusBar("Activity list error: 401, Unauthorized.", 5000, StatusType.ERROR);
+                    case 403 -> displayStatusBar("Activity list error: 403, Forbidden, you cannot access.", 5000, StatusType.ERROR);
+                    case 404 -> displayStatusBar("Activity list error: 404, Not found.", 5000, StatusType.ERROR);
+                    case 429 -> displayStatusBar("Activity list error: 429, Too many requests. Try again later.", 5000, StatusType.ERROR);
+                    case 500 -> displayStatusBar("Activity list error: 500, Strava is having issues.", 5000, StatusType.ERROR);
                 }
                 http.disconnect();
             }
@@ -565,10 +581,59 @@ public class mainController implements Initializable
     }
 
     /* To be looped through */
-    private boolean singleActivityHTTPRequest(int activityID)
+    private boolean singleActivityHTTPRequest(long activityID, String access_Token)
     {
+        boolean successfulRequest = false;
 
-        return true;
+        if (access_Token != null)
+        {
+            try
+            {
+                URL url = new URL("https://www.strava.com/api/v3/activities/" + activityID);
+
+                HttpURLConnection http = (HttpURLConnection)url.openConnection();
+                http.setRequestProperty("Authorization", "Bearer " + access_Token);
+
+                int responseCode = http.getResponseCode();
+
+                switch (responseCode)
+                {
+                    case 200 -> {
+                        BufferedReader responseReader = new BufferedReader(new InputStreamReader(http.getInputStream()));
+                        String response;
+
+                        do
+                        {
+                            response = responseReader.readLine();
+                        }
+                        while ((responseReader.readLine()) != null);
+
+                        currentAthlete.activitiesUpdate(response, activityID); //Adds activity to athlete
+                        successfulRequest = true;
+                    }
+                    case 401 -> displayStatusBar("Activity retrieval error: 401, Unauthorized.", 5000, StatusType.ERROR);
+                    case 403 -> displayStatusBar("Activity retrieval error: 403, Forbidden, you cannot access.", 5000, StatusType.ERROR);
+                    case 404 -> displayStatusBar("Activity retrieval error: 404, Not found.", 5000, StatusType.ERROR);
+                    case 429 -> displayStatusBar("Activity retrieval error: 429, Too many requests. Try again later.", 5000, StatusType.ERROR);
+                    case 500 -> displayStatusBar("Activity retrieval error: 500, Strava is having issues.", 5000, StatusType.ERROR);
+                }
+                http.disconnect();
+            }
+            catch (UnknownHostException e)
+            {
+                displayStatusBar("Internet connection unknown or failed.", 7000, StatusType.ERROR);
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        }
+        else
+        {
+            displayStatusBar("Error: No access token found.", 5000, StatusType.ERROR);
+        }
+
+        return successfulRequest;
     }
 
     /** UI methods **/
@@ -657,11 +722,11 @@ public class mainController implements Initializable
 
                 if (decider == 0)
                 {
-                    rotation = "cw";
+                    rotation = Rotation.CW;
                 }
                 else
                 {
-                    rotation = "ccw";
+                    rotation = Rotation.CCW;
                 }
             }
 
@@ -697,7 +762,7 @@ public class mainController implements Initializable
             /* Rotation */
             switch (rotation)
             {
-                case "ccw":
+                case CCW:
                     if (AYPercentage == 0.00 && AXPercentage != 0.00)
                     {
                         AXPercentage -= speed;
@@ -760,7 +825,7 @@ public class mainController implements Initializable
                     }
                     break;
 
-                case "cw":
+                case CW:
                     if (AYPercentage == 0.00 && AXPercentage != 100.00)
                     {
                         AXPercentage += speed;
@@ -1018,19 +1083,24 @@ public class mainController implements Initializable
     }
     public void signOutButton_Action()
     {
-        File athleteInformation = new File("src/mainApp/athleteData/athleteInformation.json");
-        File tokenData = new File("src/mainApp/athleteData/tokenData.json");
-        if (athleteInformation.delete() && tokenData.delete())
+        if(displayPrompt("Are you sure?", "Are you sure you want to sign out? All saved activities and data will be lost.", PromptType.CONFIRMATION))
         {
-            currentAthlete = new Athlete();
-            displayStatusBar("Signed out athlete." , 3000, StatusType.ALERT);
-        }
-        else
-        {
-            displayStatusBar("Sign out failed.", 3000, StatusType.ERROR);
-        }
+            File athleteInformation = new File("src/mainApp/athleteData/athleteInformation.json");
+            File tokenData = new File("src/mainApp/athleteData/tokenData.json");
 
-        updateLoggedInIcon(false);
+
+            if (athleteInformation.delete() && tokenData.delete())
+            {
+                currentAthlete = new Athlete();
+                displayStatusBar("Signed out athlete." , 3000, StatusType.ALERT);
+            }
+            else
+            {
+                displayStatusBar("Sign out failed.", 3000, StatusType.ERROR);
+            }
+
+            updateLoggedInIcon(false);
+        }
     }
     public void backButton_Action()
     {
@@ -1048,27 +1118,31 @@ public class mainController implements Initializable
             long fromTimestamp = fromDate.toEpochSecond(ZoneOffset.UTC);
             long toTimestamp = toDate.toEpochSecond(ZoneOffset.UTC);
 
+
+            /** ADD 15 MINUTE COOLDOWN HERE!!! **/
+
+
             if (toTimestamp <= fromTimestamp)
             {
-                throw new RuntimeException("To date is less than from date, negative time.");
+                displayStatusBar("To-date cannot be before from-date, try again.", 5000, StatusType.ERROR);
             }
-            if (displayPrompt("Are you sure?", "Activities between " + fromDate.format(DateTimeFormatter.ISO_DATE) + " and " + toDate.format(DateTimeFormatter.ISO_DATE) + " will be retrieved.\n\nYou will not be able to make another request for the next 15 minutes.", PromptType.CONFIRMATION))
+            else if (toTimestamp - fromTimestamp >= 2718400) //31 days
             {
-                activityListHTTPRequest(currentAthlete.getAccess_Token(), fromTimestamp, toTimestamp);
+                displayStatusBar("Range cannot be longer than 31 days, try again", 6000, StatusType.ERROR);
+            }
+            else if (displayPrompt("Are you sure?", "Activities between " + fromDate.format(DateTimeFormatter.ISO_DATE) + " and " + toDate.format(DateTimeFormatter.ISO_DATE) + " will be retrieved.\n\nYou will not be able to make another request for the next 15 minutes.", PromptType.CONFIRMATION))
+            {
                 displayStatusBar("Getting activities.", 3000, StatusType.ALERT);
+                activityListHTTPRequest(currentAthlete.getAccess_Token(), fromTimestamp, toTimestamp);
             }
         }
         catch (NullPointerException e)
         {
             displayStatusBar("No dates for request, try again.", 5000, StatusType.ERROR);
         }
-        catch (RuntimeException e)
-        {
-            displayStatusBar("To-date cannot be before from-date, try again.", 5000, StatusType.ERROR);
-        }
     }
 
-    /** Handles control bar buttons**/
+    /** Handles control bar buttons **/
     public void minimizeButton_Action()
     {
         main.window.setIconified(!main.window.isIconified());
