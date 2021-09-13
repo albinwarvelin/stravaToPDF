@@ -34,7 +34,9 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class mainController implements Initializable
 {
@@ -129,6 +131,9 @@ public class mainController implements Initializable
     public long lastActivityRequest = 0;
     private ArrayList<Long> idQueue = new ArrayList<>();
     private AtomicInteger idIndex = new AtomicInteger(0);
+    private AtomicLong toTimestamp = new AtomicLong(0);
+    private AtomicLong fromTimestamp = new AtomicLong(0);
+    private AtomicBoolean successfulTokenRefresh = new AtomicBoolean(false);
 
     /* Run on first startup */
     @Override
@@ -142,37 +147,27 @@ public class mainController implements Initializable
         /* Loads token data from file, if refresh is necessary HTTP request is sent and access token is updated. Also updates athlete to newest version */
         if (currentAthlete.loadTokenDataFromFile())
         {
-            boolean successfulTokenRefresh = false;
-
             displayStatusBar("Token data loaded from file.", 5000, StatusType.ALERT);
 
             if (checkRefreshNecessary())
             {
-                if (tokenRefreshHTTPRequest(currentAthlete.getRefresh_Token()))
-                {
-                    successfulTokenRefresh = true;
-                    currentAthlete.saveTokenDataToFile();
-                }
-            }
-            if (athleteInfoHTTPRequest(currentAthlete.getAccess_Token()))
-            {
-                if (successfulTokenRefresh)
-                {
-                    displayStatusBar("Token refresh and athlete refresh successful.", 3000, StatusType.SUCCESS);
-                }
-                else
-                {
-                    displayStatusBar("Athlete information refresh successful. Token refresh not needed.", 3000, StatusType.SUCCESS);
-                }
+                initializeTaskReturns();
+                tokenRefreshHTTPRequest.reset();
+                tokenRefreshHTTPRequest.start();
 
-                currentAthlete.saveAthleteDataToFile();
+                if (successfulTokenRefresh.get())
+                {
+                    initializeTaskReturns();
+                    athleteInfoHTTPRequest.reset();
+                    athleteInfoHTTPRequest.start();
+                }
             }
             else
             {
-                currentAthlete.loadAthleteDataFromFile();
+                initializeTaskReturns();
+                athleteInfoHTTPRequest.reset();
+                athleteInfoHTTPRequest.start();
             }
-
-            updateLoggedInIcon(true);
         }
         else
         {
@@ -308,17 +303,11 @@ public class mainController implements Initializable
             {
                 String code = url.substring(url.indexOf("code=") + 5, url.indexOf('&', url.indexOf("code=") + 5));
 
-
                 authTokenHTTPRequest(code);
-                if(athleteInfoHTTPRequest(currentAthlete.getAccess_Token()))
-                {
-                    displayStatusBar("Athlete information retrieval successful.", 5000, StatusType.SUCCESS);
 
-                    updateLoggedInIcon(true);
-
-                    currentAthlete.saveTokenDataToFile();
-                    currentAthlete.saveAthleteDataToFile();
-                }
+                initializeTaskReturns();
+                athleteInfoHTTPRequest.reset();
+                athleteInfoHTTPRequest.start();
             }
         }
     }
@@ -373,218 +362,212 @@ public class mainController implements Initializable
         }
     }
 
-    /** Data retrieval, from strava or file if strava is not working **/
-    /* Checks if token refresh is needed */
-    private boolean checkRefreshNecessary()
-    {
-        boolean refreshNecessary = false;
-
-        long currentTimestamp = Instant.now().getEpochSecond();
-        long expires_At = currentAthlete.getExpires_At();
-
-        if ((expires_At - 3600) < currentTimestamp)
-        {
-            refreshNecessary = true;
-        }
-
-        return refreshNecessary;
-    }
-
-    /* Token refresh, does not display anything on successful request */
-    private boolean tokenRefreshHTTPRequest(String refresh_Token)
-    {
-        boolean successfulRequest = false;
-
-        if (refresh_Token != null)
-        {
-            try
-            {
-                URL url = new URL("https://www.strava.com/api/v3/oauth/token");
-                HttpURLConnection http = (HttpURLConnection)url.openConnection();
-                http.setRequestMethod("POST");
-                http.setDoOutput(true);
-                http.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-
-                String params = "client_id=67536&client_secret=ca0ffca492eed64219d40971807f716cfa3d50a4&grant_type=refresh_token&refresh_token=" + refresh_Token;
-
-                byte[] out = params.getBytes(StandardCharsets.UTF_8);
-
-                OutputStream stream = http.getOutputStream();
-                stream.write(out);
-
-                int responseCode = http.getResponseCode();
-
-                switch (responseCode)
-                {
-                    case 200 -> {
-                        BufferedReader responseReader = new BufferedReader(new InputStreamReader(http.getInputStream()));
-                        String response;
-
-                        do
-                        {
-                            response = responseReader.readLine();
-                        }
-                        while ((responseReader.readLine()) != null);
-
-                        currentAthlete.refreshTokenUpdate(response);
-                        successfulRequest = true;
-                    }
-                    case 401 -> displayStatusBar("Token refresh error: 401, Unauthorized.", 5000, StatusType.ERROR);
-                    case 403 -> displayStatusBar("Token refresh error: 403, Forbidden, you cannot access.", 5000, StatusType.ERROR);
-                    case 404 -> displayStatusBar("Token refresh error: 404, Not found.", 5000, StatusType.ERROR);
-                    case 429 -> displayStatusBar("Token refresh error: 429, Too many requests. Try again later.", 5000, StatusType.ERROR);
-                    case 500 -> displayStatusBar("Token refresh error: 500, Strava is having issues.", 5000, StatusType.ERROR);
-                }
-                http.disconnect();
-            }
-            catch (UnknownHostException e)
-            {
-                displayStatusBar("Internet connection unknown or failed.", 7000, StatusType.ERROR);
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-            }
-        }
-        else
-        {
-            displayStatusBar("Refresh error: Faulty refresh Token", 5000, StatusType.ERROR);
-        }
-
-        return successfulRequest;
-    }
-
-    /* Retrieves athlete data with HTTP request to strava api, sends response to currentAthlete, does not display anything on successful request */
-    private boolean athleteInfoHTTPRequest(String access_Token)
-    {
-        boolean successfulRequest = false;
-
-        if (access_Token != null)
-        {
-            try
-            {
-                URL url = new URL("https://www.strava.com/api/v3/athlete");
-
-                HttpURLConnection http = (HttpURLConnection)url.openConnection();
-                http.setRequestProperty("Authorization", "Bearer " + access_Token);
-
-                int responseCode = http.getResponseCode();
-
-                switch (responseCode)
-                {
-                    case 200 -> {
-                        BufferedReader responseReader = new BufferedReader(new InputStreamReader(http.getInputStream()));
-                        String response;
-
-                        do
-                        {
-                            response = responseReader.readLine();
-                        }
-                        while ((responseReader.readLine()) != null);
-
-                        currentAthlete.athleteUpdate(response);
-                        successfulRequest = true;
-                    }
-                    case 401 -> displayStatusBar("Athlete information error: 401, Unauthorized.", 5000, StatusType.ERROR);
-                    case 403 -> displayStatusBar("Athlete information error: 403, Forbidden, you cannot access.", 5000, StatusType.ERROR);
-                    case 404 -> displayStatusBar("Athlete information error: 404, Not found.", 5000, StatusType.ERROR);
-                    case 429 -> displayStatusBar("Athlete information error: 429, Too many requests. Try again later.", 5000, StatusType.ERROR);
-                    case 500 -> displayStatusBar("Athlete information error: 500, Strava is having issues.", 5000, StatusType.ERROR);
-                }
-                http.disconnect();
-            }
-            catch (UnknownHostException e)
-            {
-                displayStatusBar("Internet connection unknown or failed.", 7000, StatusType.ERROR);
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-            }
-        }
-        else
-        {
-            displayStatusBar("Error: No access token found.", 5000, StatusType.ERROR);
-        }
-
-        return successfulRequest;
-    }
-
-    /* Retrieves activity data between two timestamps, runs loop in separate threads */
-    private boolean activityRangeHTTPRequest(String access_Token, long fromTimestamp, long toTimestamp)
-    {
-        idQueue.clear();
-        idIndex.set(0);
-
-        boolean successfulRequest = false;
-
-        if (access_Token != null)
-        {
-            try
-            {
-                URL url = new URL("https://www.strava.com/api/v3/athlete/activities?before=" + toTimestamp + "&after=" + fromTimestamp + "&per_page=80");
-
-                HttpURLConnection http = (HttpURLConnection)url.openConnection();
-                http.setRequestProperty("Authorization", "Bearer " + access_Token);
-
-                int responseCode = http.getResponseCode();
-
-                switch (responseCode)
-                {
-                    case 200 -> {
-                        BufferedReader responseReader = new BufferedReader(new InputStreamReader(http.getInputStream()));
-                        String response;
-
-                        do
-                        {
-                            response = responseReader.readLine();
-                        }
-                        while ((responseReader.readLine()) != null);
-
-                        JSONArray jsonActivityList = new JSONArray(response);
-
-                        for (int i = 0; i < jsonActivityList.length(); i++)
-                        {
-                            if (!currentAthlete.checkContainsId(jsonActivityList.getJSONObject(i).getLong("id")))   //Add if not already in list
-                            {
-                                idQueue.add(jsonActivityList.getJSONObject(i).getLong("id"));
-                            }
-                        }
-
-                        initializeTaskReturns();
-                        singleActivityHTTPRequest.reset();
-                        singleActivityHTTPRequest.start();
-                        successfulRequest = true;
-                    }
-                    case 401 -> displayStatusBar("Activity list error: 401, Unauthorized.", 5000, StatusType.ERROR);
-                    case 403 -> displayStatusBar("Activity list error: 403, Forbidden, you cannot access.", 5000, StatusType.ERROR);
-                    case 404 -> displayStatusBar("Activity list error: 404, Not found.", 5000, StatusType.ERROR);
-                    case 429 -> displayStatusBar("Activity list error: 429, Too many requests. Try again later.", 5000, StatusType.ERROR);
-                    case 500 -> displayStatusBar("Activity list error: 500, Strava is having issues.", 5000, StatusType.ERROR);
-                }
-                http.disconnect();
-            }
-            catch (UnknownHostException e)
-            {
-                displayStatusBar("Internet connection unknown or failed.", 7000, StatusType.ERROR);
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-            }
-        }
-        else
-        {
-            displayStatusBar("Error: No access token found.", 5000, StatusType.ERROR);
-        }
-
-        return successfulRequest;
-    }
-
-
     /** HTTP Request tasks **/
+    /* Retrieves athlete data with HTTP request to strava api, sends response to currentAthlete */
+    private final Service<String> tokenRefreshHTTPRequest = new Service<String>()
+    {
+        @Override
+        protected Task<String> createTask()
+        {
+            return new Task<>()
+            {
+                @Override
+                protected String call()
+                {
+                    if (currentAthlete.getRefresh_Token() != null)
+                    {
+                        try
+                        {
+                            URL url = new URL("https://www.strava.com/api/v3/oauth/token");
+                            HttpURLConnection http = (HttpURLConnection)url.openConnection();
+                            http.setRequestMethod("POST");
+                            http.setDoOutput(true);
+                            http.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+
+                            String params = "client_id=67536&client_secret=ca0ffca492eed64219d40971807f716cfa3d50a4&grant_type=refresh_token&refresh_token=" + currentAthlete.getRefresh_Token();
+
+                            byte[] out = params.getBytes(StandardCharsets.UTF_8);
+
+                            OutputStream stream = http.getOutputStream();
+                            stream.write(out);
+
+                            int responseCode = http.getResponseCode();
+
+                            switch (responseCode)
+                            {
+                                case 200 -> {
+                                    successfulTokenRefresh.set(true);
+
+                                    BufferedReader responseReader = new BufferedReader(new InputStreamReader(http.getInputStream()));
+                                    String response;
+
+                                    do
+                                    {
+                                        response = responseReader.readLine();
+                                    }
+                                    while ((responseReader.readLine()) != null);
+
+                                    return response;
+                                }
+                                case 401 -> displayStatusBar("Token refresh error: 401, Unauthorized.", 5000, StatusType.ERROR);
+                                case 403 -> displayStatusBar("Token refresh error: 403, Forbidden, you cannot access.", 5000, StatusType.ERROR);
+                                case 404 -> displayStatusBar("Token refresh error: 404, Not found.", 5000, StatusType.ERROR);
+                                case 429 -> displayStatusBar("Token refresh error: 429, Too many requests. Try again later.", 5000, StatusType.ERROR);
+                                case 500 -> displayStatusBar("Token refresh error: 500, Strava is having issues.", 5000, StatusType.ERROR);
+                            }
+                            http.disconnect();
+                        }
+                        catch (UnknownHostException e)
+                        {
+                            displayStatusBar("Internet connection unknown or failed.", 7000, StatusType.ERROR);
+                        }
+                        catch (IOException e)
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+                    else
+                    {
+                        displayStatusBar("Refresh error: Faulty refresh Token", 5000, StatusType.ERROR);
+                    }
+
+                    return "error";
+                }
+            };
+        }
+    };
+
+    private final Service<String> athleteInfoHTTPRequest = new Service<String>()
+    {
+        @Override
+        protected Task<String> createTask()
+        {
+            return new Task<>()
+            {
+                @Override
+                protected String call()
+                {
+                    if (currentAthlete.getAccess_Token() != null)
+                    {
+                        successfulTokenRefresh.set(false);
+
+                        try
+                        {
+                            URL url = new URL("https://www.strava.com/api/v3/athlete");
+
+                            HttpURLConnection http = (HttpURLConnection)url.openConnection();
+                            http.setRequestProperty("Authorization", "Bearer " + currentAthlete.getAccess_Token());
+
+                            int responseCode = http.getResponseCode();
+
+                            switch (responseCode)
+                            {
+                                case 200 -> {
+                                    BufferedReader responseReader = new BufferedReader(new InputStreamReader(http.getInputStream()));
+                                    String response;
+
+                                    do
+                                    {
+                                        response = responseReader.readLine();
+                                    }
+                                    while ((responseReader.readLine()) != null);
+
+                                    return response;
+                                }
+                                case 401 -> displayStatusBar("Athlete information error: 401, Unauthorized.", 5000, StatusType.ERROR);
+                                case 403 -> displayStatusBar("Athlete information error: 403, Forbidden, you cannot access.", 5000, StatusType.ERROR);
+                                case 404 -> displayStatusBar("Athlete information error: 404, Not found.", 5000, StatusType.ERROR);
+                                case 429 -> displayStatusBar("Athlete information error: 429, Too many requests. Try again later.", 5000, StatusType.ERROR);
+                                case 500 -> displayStatusBar("Athlete information error: 500, Strava is having issues.", 5000, StatusType.ERROR);
+                            }
+                            http.disconnect();
+                        }
+                        catch (UnknownHostException e)
+                        {
+                            displayStatusBar("Internet connection unknown or failed.", 7000, StatusType.ERROR);
+                        }
+                        catch (IOException e)
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+                    else
+                    {
+                        displayStatusBar("Error: No access token found.", 5000, StatusType.ERROR);
+                    }
+
+                    return "error";
+                }
+            };
+        }
+    };
+
+    /* Retrieves activity data between two timestamps */
+    private final Service<String> activityListHTTPRequest = new Service<String>()
+    {
+        @Override
+        protected Task<String> createTask()
+        {
+            return new Task<>()
+            {
+                @Override
+                protected String call()
+                {
+                    if (currentAthlete.getAccess_Token() != null)
+                    {
+                        try
+                        {
+                            URL url = new URL("https://www.strava.com/api/v3/athlete/activities?before=" + toTimestamp + "&after=" + fromTimestamp + "&per_page=80");
+
+                            HttpURLConnection http = (HttpURLConnection)url.openConnection();
+                            http.setRequestProperty("Authorization", "Bearer " + currentAthlete.getAccess_Token());
+
+                            int responseCode = http.getResponseCode();
+
+                            switch (responseCode)
+                            {
+                                case 200 -> {
+                                    BufferedReader responseReader = new BufferedReader(new InputStreamReader(http.getInputStream()));
+                                    String response;
+
+                                    do
+                                    {
+                                        response = responseReader.readLine();
+                                    }
+                                    while ((responseReader.readLine()) != null);
+
+                                    return response;
+                                }
+                                case 401 -> displayStatusBar("Activity list error: 401, Unauthorized.", 5000, StatusType.ERROR);
+                                case 403 -> displayStatusBar("Activity list error: 403, Forbidden, you cannot access.", 5000, StatusType.ERROR);
+                                case 404 -> displayStatusBar("Activity list error: 404, Not found.", 5000, StatusType.ERROR);
+                                case 429 -> displayStatusBar("Activity list error: 429, Too many requests. Try again later.", 5000, StatusType.ERROR);
+                                case 500 -> displayStatusBar("Activity list error: 500, Strava is having issues.", 5000, StatusType.ERROR);
+                            }
+                            http.disconnect();
+                        }
+                        catch (UnknownHostException e)
+                        {
+                            displayStatusBar("Internet connection unknown or failed.", 7000, StatusType.ERROR);
+                        }
+                        catch (IOException e)
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+                    else
+                    {
+                        displayStatusBar("Error: No access token found.", 5000, StatusType.ERROR);
+                    }
+
+                    return "error";
+                }
+            };
+        }
+    };
+
     /* Requests single activity */
-    private Service<String> singleActivityHTTPRequest = new Service<>()
+    private final Service<String> singleActivityHTTPRequest = new Service<>()
     {
         @Override
         protected Task<String> createTask()
@@ -641,20 +624,94 @@ public class mainController implements Initializable
                         displayStatusBar("Error: No access token found.", 5000, StatusType.ERROR);
                     }
 
-                    return "";
+                    return "error";
                 }
             };
         }
     };
 
+    /* Checks if token refresh is needed */
+    private boolean checkRefreshNecessary()
+    {
+        boolean refreshNecessary = false;
+
+        long currentTimestamp = Instant.now().getEpochSecond();
+        long expires_At = currentAthlete.getExpires_At();
+
+        if ((expires_At - 3600) < currentTimestamp)
+        {
+            refreshNecessary = true;
+        }
+
+        return refreshNecessary;
+    }
+
     /* Sets all "setOnSucceeded" for tasks */
     private void initializeTaskReturns()
     {
+        tokenRefreshHTTPRequest.setOnSucceeded(e ->
+        {
+            String tokenRefreshResponse = tokenRefreshHTTPRequest.getValue();
+
+            if (!tokenRefreshResponse.equals("error"))
+            {
+                currentAthlete.refreshTokenUpdate(tokenRefreshResponse);
+                currentAthlete.saveTokenDataToFile();
+
+                displayStatusBar("Token refresh successful.", 3000, StatusType.SUCCESS);
+            }
+        });
+
+        athleteInfoHTTPRequest.setOnSucceeded(e ->
+        {
+            String athleteInfoResponse = athleteInfoHTTPRequest.getValue();
+
+            if (!athleteInfoResponse.equals("error"))
+            {
+                updateLoggedInIcon(true);
+
+                currentAthlete.athleteUpdate(athleteInfoResponse);
+                currentAthlete.saveTokenDataToFile();
+                currentAthlete.saveAthleteDataToFile();
+
+                displayStatusBar("Athlete info retrieval successful.", 3000, StatusType.SUCCESS);
+            }
+            else
+            {
+                currentAthlete.loadAthleteDataFromFile();
+            }
+        });
+
+        activityListHTTPRequest.setOnSucceeded(e ->
+        {
+            idQueue.clear();
+            idIndex.set(0);
+
+            String activityListResponse = activityListHTTPRequest.getValue();
+
+            if (!activityListResponse.equals("error"))
+            {
+                JSONArray jsonActivityList = new JSONArray(activityListResponse);
+
+                for (int i = 0; i < jsonActivityList.length(); i++)
+                {
+                    if (!currentAthlete.checkContainsId(jsonActivityList.getJSONObject(i).getLong("id")))   //Add if not already in list
+                    {
+                        idQueue.add(jsonActivityList.getJSONObject(i).getLong("id"));
+                    }
+                }
+
+                initializeTaskReturns();
+                singleActivityHTTPRequest.reset();
+                singleActivityHTTPRequest.start();
+            }
+        });
+
         singleActivityHTTPRequest.setOnSucceeded(e ->
         {
-            String singleActivityResponse = (String) singleActivityHTTPRequest.getValue();
+            String singleActivityResponse = singleActivityHTTPRequest.getValue();
 
-            if (!singleActivityResponse.equals(""))
+            if (!singleActivityResponse.equals("error"))
             {
                 currentAthlete.activitiesUpdate(singleActivityResponse, idQueue.get(idIndex.get()));
 
@@ -664,6 +721,7 @@ public class mainController implements Initializable
                 {
                     idIndex.getAndIncrement();
 
+                    initializeTaskReturns();
                     singleActivityHTTPRequest.reset();
                     singleActivityHTTPRequest.start();
                 }
@@ -1111,9 +1169,15 @@ public class mainController implements Initializable
     }
     public void refreshButton_Action()
     {
-        if(tokenRefreshHTTPRequest(currentAthlete.getRefresh_Token()) && athleteInfoHTTPRequest(currentAthlete.getAccess_Token()))
+        initializeTaskReturns();
+        tokenRefreshHTTPRequest.reset();
+        tokenRefreshHTTPRequest.start();
+
+        if (successfulTokenRefresh.get())
         {
-            displayStatusBar("Athlete information refresh successful.", 3000, StatusType.SUCCESS);
+            initializeTaskReturns();
+            athleteInfoHTTPRequest.reset();
+            athleteInfoHTTPRequest.start();
         }
     }
     public void signOutButton_Action()
@@ -1150,25 +1214,28 @@ public class mainController implements Initializable
             LocalDateTime fromDate = aL_fromDatePicker.getValue().atStartOfDay();
             LocalDateTime toDate = aL_toDatePicker.getValue().atTime(23,59,59);
 
-            long fromTimestamp = fromDate.toEpochSecond(ZoneOffset.UTC);
-            long toTimestamp = toDate.toEpochSecond(ZoneOffset.UTC);
+            fromTimestamp.set(fromDate.toEpochSecond(ZoneOffset.UTC));
+            toTimestamp.set(toDate.toEpochSecond(ZoneOffset.UTC));
 
 
             /** ADD 15 MINUTE COOLDOWN HERE!!! **/
 
 
-            if (toTimestamp <= fromTimestamp)
+            if (toTimestamp.get() <= fromTimestamp.get())
             {
                 displayStatusBar("To-date cannot be before from-date, try again.", 5000, StatusType.ERROR);
             }
-            else if (toTimestamp - fromTimestamp >= 2718400) //31 days
+            else if (toTimestamp.get() - fromTimestamp.get() >= 2718400) //31 days
             {
                 displayStatusBar("Range cannot be longer than 31 days, try again", 6000, StatusType.ERROR);
             }
             else if (displayPrompt("Are you sure?", "Activities between " + fromDate.format(DateTimeFormatter.ISO_DATE) + " and " + toDate.format(DateTimeFormatter.ISO_DATE) + " will be retrieved.\n\nYou will not be able to make another request for the next 15 minutes.", PromptType.CONFIRMATION))
             {
                 displayStatusBar("Getting activities.", 3000, StatusType.ALERT);
-                activityRangeHTTPRequest(currentAthlete.getAccess_Token(), fromTimestamp, toTimestamp);
+
+                initializeTaskReturns();
+                activityListHTTPRequest.reset();
+                activityListHTTPRequest.start();
             }
         }
         catch (NullPointerException e)
