@@ -128,3 +128,8 @@ hs_err_pid*
 
 # Google Drive .ini files #
 **/desktop.ini
+
+# Userdata files #
+**/userPreferences.json
+**/tokenData.json
+**/athleteInformation.json
