@@ -30,10 +30,6 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.ResourceBundle;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -66,9 +62,10 @@ public class mainController implements Initializable
     public AnchorPane mainAP; //Main anchorpane
 
     /* Activity loader */
-    public AnchorPane activityLoaderAP; //Used in activity loading from strava
+    public HBox aL_HBox; //Used in activity loading from strava
     public DatePicker aL_toDatePicker;
     public DatePicker aL_fromDatePicker;
+    public ListView<String> aL_ListView;
 
     /* Misc */
     public WebView authorizationWV;
@@ -143,6 +140,7 @@ public class mainController implements Initializable
         currentAthlete = new Athlete();
         isMaximized = main.userPreferences.wantFullscreen();
         initializeTaskReturns();
+        authorizationWV.getStylesheets().add(getClass().getResource("specificStyling/webviewScroll.css").toExternalForm());
 
         /* Loads token data from file, if refresh is necessary HTTP request is sent and access token is updated. Also updates athlete to newest version */
         if (currentAthlete.loadTokenDataFromFile())
@@ -714,6 +712,7 @@ public class mainController implements Initializable
             if (!singleActivityResponse.equals("error"))
             {
                 currentAthlete.activitiesUpdate(singleActivityResponse, idQueue.get(idIndex.get()));
+                aL_ListView.getItems().add(currentAthlete.getActivity(idQueue.get(idIndex.get())).toListString());
 
                 displayStatusBar((idIndex.get() + 1) + " of " + idQueue.size() + " retrieved.", 6000, StatusType.ALERT);
 
@@ -1101,12 +1100,15 @@ public class mainController implements Initializable
         {
             case CONFIRMATION:
             {
-                Alert alert = new Alert(Alert.AlertType.CONFIRMATION, contentText, ButtonType.YES, ButtonType.NO);
+                ButtonType CUSTOM_YES = new ButtonType("Yes", ButtonBar.ButtonData.YES);
+                ButtonType CUSTOM_NO = new ButtonType("No", ButtonBar.ButtonData.NO);
+
+                Alert alert = new Alert(Alert.AlertType.CONFIRMATION, contentText, CUSTOM_YES, CUSTOM_NO);
                 alert.setHeaderText(headerText);
 
                 alert.initStyle(StageStyle.TRANSPARENT);
                 alert.getDialogPane().getScene().setFill(Color.TRANSPARENT);
-                alert.getDialogPane().setPrefSize(350, 220);
+                alert.getDialogPane().setPrefSize(425, 225);
 
                 makeNodeDraggable(alert.getDialogPane());
 
@@ -1117,7 +1119,7 @@ public class mainController implements Initializable
 
                 alert.showAndWait();
 
-                if (alert.getResult() == ButtonType.YES)
+                if (alert.getResult() == CUSTOM_YES)
                 {
                     returnBoolean = true;
                 }
@@ -1138,13 +1140,13 @@ public class mainController implements Initializable
     public void getActivities_Action()
     {
         /* Brings anchorpane to front if not in front */
-        if(innerContentSP.getChildren().get(innerContentSP.getChildren().size() - 1) == activityLoaderAP)
+        if(innerContentSP.getChildren().get(innerContentSP.getChildren().size() - 1) == aL_HBox)
         {
-            activityLoaderAP.toBack();
+            aL_HBox.toBack();
         }
         else
         {
-            activityLoaderAP.toFront();
+            aL_HBox.toFront();
         }
     }
     public void chooseActivities_Action()

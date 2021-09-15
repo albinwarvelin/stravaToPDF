@@ -410,6 +410,12 @@ public class Athlete
         return idList.contains(id);
     }
 
+    /* Getters for activities */
+    public Activity getActivity(long id)
+    {
+        return activities.get(id);
+    }
+
     /** App resources get and set methods **/
     public String getToken_Type()
     {
@@ -454,10 +460,6 @@ public class Athlete
     }
 
     /** Athlete information get and set methods**/
-    public Activity getActivity(int id)
-    {
-        return activities.get(id);
-    }
     public boolean getLoggedIn()
     {
         return isLoggedIn;

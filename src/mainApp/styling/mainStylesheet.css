@@ -248,3 +248,10 @@
 {
     -fx-opacity: 0.8;
 }
+.alList
+{
+    -fx-background-color: transparent;
+    -fx-border-color: rgba(40, 40, 40, 0.50);
+    -fx-border-width: 8px;
+    -fx-border-radius: 10px;
+}

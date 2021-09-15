@@ -1,11 +1,17 @@
 package mainApp;
 
+import javafx.util.converter.LocalDateTimeStringConverter;
 import org.json.JSONObject;
+
+import java.time.LocalDateTime;
 
 public class Activity
 {
     /** Variables, all initialized so there's no requirement for all variables to be filled **/
     private long id = 0;
+    private String name = "";
+    private LocalDateTime startDate = null;
+
     private double max_Heartrate = 0;
     private String type = "";
     private int comment_Count = 0;
@@ -13,7 +19,6 @@ public class Activity
     private int kudos_Count = 0;
     private int athlete_Count = 0;
     private int max_Speed = 0;  //meters per second
-    private String name = "";
     private boolean commute = false;
     private double average_Cadence = 0;
     private double distance = 0;
@@ -37,6 +42,35 @@ public class Activity
 
     public Activity(JSONObject jsonObject)
     {
-        //Add Parsing here
+        id = jsonObject.getLong("id");
+        name = jsonObject.getString("name");
+        String startDateString = jsonObject.getString("start_date_local");
+        startDate = LocalDateTime.parse(startDateString.substring(0, startDateString.length() - 1));
+        System.out.println(startDate);
+    }
+
+    public String toListString()
+    {
+        return id + " " + name;
+    }
+
+    /** Get methods **/
+    public long getId()
+    {
+        return id;
+    }
+    public String getName()
+    {
+        return name;
+    }
+
+    /** Set methods */
+    public void setId(long id)
+    {
+        this.id = id;
+    }
+    public void setName(String name)
+    {
+        this.name = name;
     }
 }
