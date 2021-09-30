@@ -255,3 +255,14 @@
     -fx-border-width: 8px;
     -fx-border-radius: 10px;
 }
+.alList .list-cell
+{
+    -fx-cell-size: 30px;
+    -fx-background-color: transparent;
+    -fx-text-fill: -fx-pagetext;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-font-style: italic;
+    -fx-font-family: "Roboto";
+}
+

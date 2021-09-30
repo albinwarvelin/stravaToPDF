@@ -307,14 +307,11 @@
                                     <Insets left="40.0" right="50.0" top="40.0" />
                                  </HBox.margin>
                               </AnchorPane>
-                              <AnchorPane prefWidth="450.0">
+                              <ListView fx:id="aL_ListView" focusTraversable="false" maxHeight="-Infinity" prefHeight="500.0" prefWidth="450.0" styleClass="alList">
                                  <HBox.margin>
-                                    <Insets bottom="55.0" right="55.0" top="55.0" />
+                                    <Insets right="55.0" top="55.0" />
                                  </HBox.margin>
-                                 <children>
-                                    <ListView fx:id="aL_ListView" prefHeight="515.0" prefWidth="450.0" styleClass="alList" />
-                                 </children>
-                              </AnchorPane>
+                              </ListView>
                            </children>
                         </HBox>
                      </children>

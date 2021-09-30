@@ -712,7 +712,8 @@ public class mainController implements Initializable
             if (!singleActivityResponse.equals("error"))
             {
                 currentAthlete.activitiesUpdate(singleActivityResponse, idQueue.get(idIndex.get()));
-                aL_ListView.getItems().add(currentAthlete.getActivity(idQueue.get(idIndex.get())).toListString());
+
+                addSortAl_List(currentAthlete.getActivity(idQueue.get(idIndex.get())));
 
                 displayStatusBar((idIndex.get() + 1) + " of " + idQueue.size() + " retrieved.", 6000, StatusType.ALERT);
 
@@ -1131,6 +1132,29 @@ public class mainController implements Initializable
         return returnBoolean;
     }
 
+    private void addSortAl_List(Activity toAdd)
+    {
+        LocalDateTime dateTime = toAdd.getStartDateTime();
+        boolean added = false;
+
+        for (int i = 0; i < aL_ListView.getItems().size(); i++)
+        {
+            String tempLDTString = aL_ListView.getItems().get(i).substring(0, 16);
+            LocalDateTime tempDateTime = LocalDateTime.parse(tempLDTString, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+            if (dateTime.isAfter(tempDateTime))
+            {
+                aL_ListView.getItems().add(i, toAdd.toListString());
+                added = true;
+                break;
+            }
+        }
+
+        if (!added)
+        {
+            aL_ListView.getItems().add(toAdd.toListString());
+        }
+    }
+
     /** Handles navbar buttons **/
     public void authorizationButton_Action()
     {
@@ -1219,9 +1243,7 @@ public class mainController implements Initializable
             fromTimestamp.set(fromDate.toEpochSecond(ZoneOffset.UTC));
             toTimestamp.set(toDate.toEpochSecond(ZoneOffset.UTC));
 
-
             /** ADD 15 MINUTE COOLDOWN HERE!!! **/
-
 
             if (toTimestamp.get() <= fromTimestamp.get())
             {
