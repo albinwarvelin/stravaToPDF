@@ -132,4 +132,5 @@ hs_err_pid*
 # Userdata files #
 **/userPreferences.json
 **/tokenData.json
-**/athleteInformation.json
+**/athleteData.json
+**/activitiesData.json
