@@ -157,14 +157,22 @@ public class mainController implements Initializable
                 {
                     initializeTaskReturns();
                     athleteInfoHTTPRequest.reset();
-                    athleteInfoHTTPRequest.start();
+                    athleteInfoHTTPRequest.start(); //HTTP Request for athlete info, uses file data if failed
                 }
             }
             else
             {
                 initializeTaskReturns();
                 athleteInfoHTTPRequest.reset();
-                athleteInfoHTTPRequest.start();
+                athleteInfoHTTPRequest.start(); //HTTP Request for athlete info, uses file data if failed
+            }
+
+            currentAthlete.loadActivitiesDataFromFile();
+
+            ArrayList<Long> activityKeys = new ArrayList<>(currentAthlete.getActivityList().keySet());
+            for (Long key : activityKeys)
+            {
+                addSortAl_List(currentAthlete.getActivity(key));
             }
         }
         else
@@ -725,6 +733,10 @@ public class mainController implements Initializable
                     singleActivityHTTPRequest.reset();
                     singleActivityHTTPRequest.start();
                 }
+                else
+                {
+                    currentAthlete.saveActivitiesToFile();
+                }
             }
         });
     }
@@ -1210,7 +1222,7 @@ public class mainController implements Initializable
     {
         if(displayPrompt("Are you sure?", "Are you sure you want to sign out? All saved activities and data will be lost.", PromptType.CONFIRMATION))
         {
-            File athleteInformation = new File("src/mainApp/athleteData/athleteInformation.json");
+            File athleteInformation = new File("src/mainApp/athleteData/athleteData.json");
             File tokenData = new File("src/mainApp/athleteData/tokenData.json");
 
 

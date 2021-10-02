@@ -148,23 +148,7 @@ public class Athlete
         activities.put(id, new Activity(new JSONObject(jsonString)));
     }
 
-    public void saveTokenDataToFile()
-    {
-        try
-        {
-            JSONObject tokenData = tokenDataToJSONObject();
-
-            BufferedWriter athleteDataWriter = new BufferedWriter(new FileWriter("src/mainApp/athleteData/tokenData.json"));
-            athleteDataWriter.write(tokenData.toString());
-
-            athleteDataWriter.close();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
-    }
-
+    /* Loads token data from file */
     public boolean loadTokenDataFromFile()
     {
         boolean dataAvailable = false;
@@ -202,32 +186,14 @@ public class Athlete
         return dataAvailable;
     }
 
-    /* Saves JSON-Object to JSON-File */
-    public void saveAthleteDataToFile()
-    {
-        try
-        {
-            JSONObject athleteData = athleteDataToJSONObject();
-
-            BufferedWriter athleteDataWriter = new BufferedWriter(new FileWriter("src/mainApp/athleteData/athleteInformation.json"));
-            athleteDataWriter.write(athleteData.toString());
-
-            athleteDataWriter.close();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
-    }
-
-    /* Loads data from file, if no file is found boolean false is returned */
+    /* Loads data from file */
     public boolean loadAthleteDataFromFile()
     {
         boolean dataAvailable = false;
 
         try
         {
-            BufferedReader athleteDataReader = new BufferedReader(new FileReader("src/mainApp/athleteData/athleteInformation.json"));
+            BufferedReader athleteDataReader = new BufferedReader(new FileReader("src/mainApp/athleteData/athleteData.json"));
             String jsonString = athleteDataReader.readLine();
 
             if (!jsonString.equals(""))
@@ -297,6 +263,93 @@ public class Athlete
         }
 
         return dataAvailable;
+    }
+
+    /* Loads data from file */
+    public boolean loadActivitiesDataFromFile()
+    {
+        boolean dataAvailable = false;
+
+        try
+        {
+            BufferedReader athleteDataReader = new BufferedReader(new FileReader("src/mainApp/athleteData/activitiesData.json"));
+            String jsonString = athleteDataReader.readLine();
+
+            if (!jsonString.equals(""))
+            {
+                JSONArray loadedJSONArray = new JSONArray(jsonString);
+
+                for (int i = 0; i < loadedJSONArray.length(); i++)
+                {
+                    activities.put(loadedJSONArray.getJSONObject(i).getLong("id"), new Activity(loadedJSONArray.getJSONObject(i)));
+                }
+            }
+        }
+        catch (FileNotFoundException e)
+        {
+            dataAvailable = false;
+
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+
+        return dataAvailable;
+    }
+
+    /* Saves JSON-Object to JSON-File */
+    public void saveTokenDataToFile()
+    {
+        try
+        {
+            JSONObject tokenData = tokenDataToJSONObject();
+
+            BufferedWriter athleteDataWriter = new BufferedWriter(new FileWriter("src/mainApp/athleteData/tokenData.json"));
+            athleteDataWriter.write(tokenData.toString());
+
+            athleteDataWriter.close();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    /* Saves JSON-Object to JSON-File */
+    public void saveAthleteDataToFile()
+    {
+        try
+        {
+            JSONObject athleteData = athleteDataToJSONObject();
+
+            BufferedWriter athleteDataWriter = new BufferedWriter(new FileWriter("src/mainApp/athleteData/athleteData.json"));
+            athleteDataWriter.write(athleteData.toString());
+
+            athleteDataWriter.close();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    /* Saves JSON-Object to JSON-File */
+    public void saveActivitiesToFile()
+    {
+        try
+        {
+            JSONArray activitiesData = activitiesDataToJSONArray();
+
+            BufferedWriter athleteDataWriter = new BufferedWriter(new FileWriter("src/mainApp/athleteData/activitiesData.json"));
+            athleteDataWriter.write(activitiesData.toString());
+
+            athleteDataWriter.close();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     /* Puts token data in JSONObject, used in saving */
@@ -403,6 +456,72 @@ public class Athlete
         return data;
     }
 
+    private JSONArray activitiesDataToJSONArray()
+    {
+        JSONArray data = new JSONArray();
+
+        ArrayList<Long> activityKeys = new ArrayList<>(activities.keySet());
+
+        for (Long id : activityKeys)
+        {
+            JSONObject activityToPut = new JSONObject();
+            Activity focusedActivity = activities.get(id);
+
+            activityToPut.put("id", focusedActivity.getId());
+            activityToPut.put("name", focusedActivity.getName());
+            activityToPut.put("location_country", focusedActivity.getLocation_Country());
+            activityToPut.put("gear_id", focusedActivity.getGear_Id());
+            activityToPut.put("description", focusedActivity.getDescription());
+            activityToPut.put("device_name", focusedActivity.getDevice_Name());
+            activityToPut.put("moving_time", focusedActivity.getMoving_Time());
+            activityToPut.put("elapsed_time",focusedActivity.getElapsed_Time());
+            activityToPut.put("achievement_count", focusedActivity.getAchievement_Count());
+            activityToPut.put("kudos_count", focusedActivity.getKudos_Count());
+            activityToPut.put("comment_count", focusedActivity.getComment_Count());
+            activityToPut.put("athlete_count", focusedActivity.getGroup_Count());
+            activityToPut.put("max_speed", focusedActivity.getMax_Speed());
+            activityToPut.put("distance", focusedActivity.getDistance());
+            activityToPut.put("total_elevation_gain", focusedActivity.getTotal_Elevation_Gain());
+            activityToPut.put("elev_low", focusedActivity.getElevation_Low());
+            activityToPut.put("elev_high", focusedActivity.getElevation_High());
+            activityToPut.put("average_temp", focusedActivity.getAverage_Temp());
+            activityToPut.put("average_speed", focusedActivity.getAverage_Speed());
+            activityToPut.put("max_heartrate", focusedActivity.getMax_Heartrate());
+            activityToPut.put("average_heartrate", focusedActivity.getAverage_Heartrate());
+            activityToPut.put("average_cadence", focusedActivity.getAverage_Cadence());
+            activityToPut.put("commute", focusedActivity.getCommute());
+            activityToPut.put("manual", focusedActivity.getManual_Activity());
+            activityToPut.put("private", focusedActivity.getPrivate_Activity());
+            activityToPut.put("start_date_local", focusedActivity.getStartDateTime() + "Z");
+            switch (focusedActivity.getWorkoutType())
+            {
+                case NONE -> activityToPut.put("workout_type", 0);
+                case RACE -> activityToPut.put("workout_type", 1);
+                case LONGRUN -> activityToPut.put("workout_type", 2);
+                case WORKOUT -> activityToPut.put("workout_type", 3);
+            }
+            activityToPut.put("type", focusedActivity.getActivityType());
+            ArrayList<Lap> activity_Laps = focusedActivity.getActivity_Laps();
+            JSONArray lapArrayToPut = new JSONArray();
+            for (Lap lap : activity_Laps)
+            {
+                JSONObject lapToPut = new JSONObject();
+
+                lapToPut.put("lap_index", lap.getLap_Index() + 1);
+                lapToPut.put("moving_time", lap.getMoving_Time());
+                lapToPut.put("elapsed_time", lap.getElapsed_Time());
+                lapToPut.put("distance", lap.getDistance());
+                lapToPut.put("average_speed", lap.getAverage_Speed());
+
+                lapArrayToPut.put(lapToPut);
+            }
+
+            data.put(activityToPut);
+        }
+
+        return data;
+    }
+
     public boolean checkContainsId(Long id)
     {
         ArrayList<Long> idList = new ArrayList<>(activities.keySet());
@@ -415,6 +534,7 @@ public class Athlete
     {
         return activities.get(id);
     }
+    public HashMap<Long, Activity> getActivityList(){return activities;}
 
     /** App resources get and set methods **/
     public String getToken_Type()

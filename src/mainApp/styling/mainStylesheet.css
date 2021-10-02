@@ -265,4 +265,27 @@
     -fx-font-style: italic;
     -fx-font-family: "Roboto";
 }
+.alList .scroll-bar:vertical,
+.alList .scroll-bar:horizontal
+{
+    -fx-background-color: transparent;
+}
+.alList .scroll-bar .increment-button,
+.alList .scroll-bar .decrement-button
+{
+    -fx-padding: 0px;
+}
+.alList .scroll-bar .increment-arrow,
+.alList .scroll-bar .decrement-arrow
+{
+    -fx-pref-height: 0;
+    -fx-pref-width: 20;
+}
+.alList .scroll-bar .thumb
+{
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-background-color: rgba(40, 40, 40, 0.50);
+}
+
 

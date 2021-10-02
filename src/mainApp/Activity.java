@@ -117,44 +117,44 @@ public class Activity
 
     private ActivityType parseActivityType(String string)
     {
-        return switch (string)
+        return switch (string.toUpperCase())
         {
-            case "AlpineSki" -> ActivityType.ALPINESKI;
-            case "BackcountrySki" -> ActivityType.BACKCOUNTRYSKI;
-            case "Canoeing" -> ActivityType.CANOEING;
-            case "Crossfit" -> ActivityType.CROSSFIT;
-            case "EBikeRide" -> ActivityType.EBIKERIDE;
-            case "Elliptical" -> ActivityType.ELLIPTICAL;
-            case "Golf" -> ActivityType.GOLF;
-            case "Handcycle" -> ActivityType.HANDCYCLE;
-            case "Hike" -> ActivityType.HIKE;
-            case "IceSkate" -> ActivityType.ICESKATE;
-            case "InlineSkate" -> ActivityType.INLINESKATE;
-            case "Kayaking" -> ActivityType.KAYAKING;
-            case "Kitesurf" -> ActivityType.KITESURF;
-            case "NordicSki" -> ActivityType.NORDICSKI;
-            case "Ride" -> ActivityType.RIDE;
-            case "RockClimbing" -> ActivityType.ROCKCLIMBING;
-            case "RollerSki" -> ActivityType.ROLLERSKI;
-            case "Rowing" -> ActivityType.ROWING;
-            case "Sail" -> ActivityType.SAIL;
-            case "Skateboard" -> ActivityType.SKATEBOARD;
-            case "Snowboard" -> ActivityType.SNOWBOARD;
-            case "Snowshoe" -> ActivityType.SNOWSHOE;
-            case "Soccer" -> ActivityType.SOCCER;
-            case "StairStepper" -> ActivityType.STAIRSTEPPER;
-            case "StandUpPaddling" -> ActivityType.STANDUPPADDLING;
-            case "Surfing" -> ActivityType.SURFING;
-            case "Swim" -> ActivityType.SWIM;
-            case "Velomobile" -> ActivityType.VELOMOBILE;
-            case "VirtualRide" -> ActivityType.VIRTUALRIDE;
-            case "VirtualRun" -> ActivityType.VIRTUALRUN;
-            case "Walk" -> ActivityType.WALK;
-            case "WeightTraining" -> ActivityType.WEIGHTTRAINING;
-            case "Wheelchair" -> ActivityType.WHEELCHAIR;
-            case "Windsurf" -> ActivityType.WINDSURF;
-            case "Workout" -> ActivityType.WORKOUT;
-            case "Yoga" -> ActivityType.YOGA;
+            case "ALPINESKI" -> ActivityType.ALPINESKI;
+            case "BACKCOUNTRYSKI" -> ActivityType.BACKCOUNTRYSKI;
+            case "CANOEING" -> ActivityType.CANOEING;
+            case "CROSSFIT" -> ActivityType.CROSSFIT;
+            case "EBIKERIDE" -> ActivityType.EBIKERIDE;
+            case "ELLIPTICAL" -> ActivityType.ELLIPTICAL;
+            case "GOLF" -> ActivityType.GOLF;
+            case "HANDCYCLE" -> ActivityType.HANDCYCLE;
+            case "HIKE" -> ActivityType.HIKE;
+            case "ICESKATE" -> ActivityType.ICESKATE;
+            case "INLINESKATE" -> ActivityType.INLINESKATE;
+            case "KAYAKING" -> ActivityType.KAYAKING;
+            case "KITESURF" -> ActivityType.KITESURF;
+            case "NORDICSKI" -> ActivityType.NORDICSKI;
+            case "RIDE" -> ActivityType.RIDE;
+            case "ROCKCLIMBING" -> ActivityType.ROCKCLIMBING;
+            case "ROLLERSKI" -> ActivityType.ROLLERSKI;
+            case "ROWING" -> ActivityType.ROWING;
+            case "SAIL" -> ActivityType.SAIL;
+            case "SKATEBOARD" -> ActivityType.SKATEBOARD;
+            case "SNOWBOARD" -> ActivityType.SNOWBOARD;
+            case "SNOWSHOE" -> ActivityType.SNOWSHOE;
+            case "SOCCER" -> ActivityType.SOCCER;
+            case "STAIRSTEPPER" -> ActivityType.STAIRSTEPPER;
+            case "STANDUPPADDLING" -> ActivityType.STANDUPPADDLING;
+            case "SURFING" -> ActivityType.SURFING;
+            case "SWIM" -> ActivityType.SWIM;
+            case "VELOMOBILE" -> ActivityType.VELOMOBILE;
+            case "VIRTUALRIDE" -> ActivityType.VIRTUALRIDE;
+            case "VIRTUALRUN" -> ActivityType.VIRTUALRUN;
+            case "WALK" -> ActivityType.WALK;
+            case "WEIGHTTRAINING" -> ActivityType.WEIGHTTRAINING;
+            case "WHEELCHAIR" -> ActivityType.WHEELCHAIR;
+            case "WINDSURF" -> ActivityType.WINDSURF;
+            case "WORKOUT" -> ActivityType.WORKOUT;
+            case "YOGA" -> ActivityType.YOGA;
 
             default -> ActivityType.RUN;
         };
@@ -287,6 +287,7 @@ public class Activity
     {
         return workoutType;
     }
+    public ArrayList<Lap> getActivity_Laps(){return activity_Laps;}
 
 
     /** Set methods */
