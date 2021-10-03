@@ -145,6 +145,7 @@ public class Athlete
     /* Updates activities */
     public void activitiesUpdate(String jsonString, long id)
     {
+        activities.remove(id);
         activities.put(id, new Activity(new JSONObject(jsonString)));
     }
 

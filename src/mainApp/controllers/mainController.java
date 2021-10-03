@@ -6,10 +6,13 @@ import javafx.animation.Timeline;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.concurrent.Worker;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.Initializable;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.control.*;
+import javafx.scene.image.WritableImage;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.web.WebView;
@@ -19,6 +22,7 @@ import javafx.util.Duration;
 import mainApp.*;
 import org.json.JSONArray;
 
+import javax.imageio.ImageIO;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -701,10 +705,7 @@ public class mainController implements Initializable
 
                 for (int i = 0; i < jsonActivityList.length(); i++)
                 {
-                    if (!currentAthlete.checkContainsId(jsonActivityList.getJSONObject(i).getLong("id")))   //Add if not already in list
-                    {
-                        idQueue.add(jsonActivityList.getJSONObject(i).getLong("id"));
-                    }
+                    idQueue.add(jsonActivityList.getJSONObject(i).getLong("id"));   //Adds id to queue
                 }
 
                 initializeTaskReturns();
@@ -1203,7 +1204,7 @@ public class mainController implements Initializable
     }
     public void settingsButton_Action()
     {
-
+        
     }
     public void refreshButton_Action()
     {

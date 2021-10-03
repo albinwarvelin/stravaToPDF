@@ -290,7 +290,6 @@
                <center>
                   <StackPane fx:id="innerContentSP" prefHeight="150.0" prefWidth="200.0" BorderPane.alignment="CENTER">
                      <children>
-                        <AnchorPane fx:id="mainAP" prefHeight="200.0" prefWidth="200.0" styleClass="mainBG" />
                         <HBox fx:id="aL_HBox" styleClass="mainBG">
                            <children>
                               <AnchorPane maxHeight="550.0" prefHeight="550.0" prefWidth="200.0">
@@ -314,6 +313,7 @@
                               </ListView>
                            </children>
                         </HBox>
+                        <AnchorPane fx:id="mainAP" prefHeight="200.0" prefWidth="200.0" styleClass="mainBG" />
                      </children>
                   </StackPane>
                </center>
